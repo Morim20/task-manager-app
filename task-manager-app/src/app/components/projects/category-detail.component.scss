@@ -1,0 +1,27 @@
+.category-detail-container {
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+
+  mat-card {
+    margin-bottom: 20px;
+  }
+
+  .task-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 8px 0;
+
+    .completed {
+      text-decoration: line-through;
+      color: #888;
+    }
+
+    .task-date {
+      color: #666;
+      font-size: 0.9em;
+    }
+  }
+} 

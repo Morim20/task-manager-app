@@ -1,0 +1,476 @@
+<!-- ヘッダー -->
+<div class="form-header">
+  <h2>新規タスク作成</h2>
+</div>
+
+<div class="task-form-container">
+  <div class="task-form-content">
+    <!-- タブ切り替え -->
+    <div class="form-section" style="display: flex; gap: 16px; margin-bottom: 24px;">
+      <button mat-stroked-button [color]="activeTab === 'todo' ? 'primary' : undefined" (click)="switchTab('todo')">TODO</button>
+      <button mat-stroked-button [color]="activeTab === 'schedule' ? 'primary' : undefined" (click)="switchTab('schedule')">スケジュール</button>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" #taskForm="ngForm">
+      <!-- TODOタブ -->
+      <ng-container *ngIf="activeTab === 'todo'">
+        <div class="form-section">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>タイトル *</mat-label>
+            <input matInput formControlName="title" placeholder="タスクのタイトルを入力">
+            <mat-error *ngIf="isFieldInvalid('title')">
+              {{ getErrorMessage('title') }}
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>カテゴリー</mat-label>
+            <mat-select formControlName="category" required>
+              <mat-option *ngFor="let category of categories" [value]="category">
+                {{category}}
+              </mat-option>
+              <mat-option (click)="onShowAddCategory($event)">
+                <mat-icon>add</mat-icon> 新規カテゴリー
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <div *ngIf="showAddCategory" style="margin: 8px 0 16px 0; display: flex; gap: 8px;">
+            <input matInput [formControl]="newCategoryControl" placeholder="新しいカテゴリー名" (keydown.enter)="addCategory()" style="flex:1;" />
+            <button mat-stroked-button color="primary" type="button" (click)="addCategory()">追加</button>
+            <button mat-button type="button" (click)="showAddCategory = false">キャンセル</button>
+          </div>
+
+          <!-- 繰り返し設定を日付の前に移動 -->
+          <div class="form-section" formGroupName="repeat">
+            <h3>繰り返し設定</h3>
+            <mat-checkbox formControlName="enabled">繰り返し</mat-checkbox>
+            
+            <div *ngIf="form.get('repeat.enabled')?.value" class="repeat-settings">
+              <mat-form-field appearance="outline">
+                <mat-label>繰り返しの頻度</mat-label>
+                <mat-select formControlName="frequency">
+                  <mat-option value="毎日">毎日</mat-option>
+                  <mat-option value="毎週">毎週</mat-option>
+                  <mat-option value="毎月">毎月</mat-option>
+                  <mat-option value="毎年">毎年</mat-option>
+                </mat-select>
+              </mat-form-field>
+
+              <!-- 繰り返し開始日を追加 -->
+              <mat-form-field appearance="outline">
+                <mat-label>繰り返し開始日</mat-label>
+                <input matInput [matDatepicker]="startDatePicker" formControlName="startDate">
+                <mat-datepicker-toggle matSuffix [for]="startDatePicker"></mat-datepicker-toggle>
+                <mat-datepicker #startDatePicker></mat-datepicker>
+              </mat-form-field>
+
+              <!-- 毎週の場合の曜日選択 -->
+              <div *ngIf="form.get('repeat.frequency')?.value === '毎週'" class="weekday-selector">
+                <mat-button-toggle-group formControlName="daysOfWeek" multiple>
+                  <mat-button-toggle [value]="0">日</mat-button-toggle>
+                  <mat-button-toggle [value]="1">月</mat-button-toggle>
+                  <mat-button-toggle [value]="2">火</mat-button-toggle>
+                  <mat-button-toggle [value]="3">水</mat-button-toggle>
+                  <mat-button-toggle [value]="4">木</mat-button-toggle>
+                  <mat-button-toggle [value]="5">金</mat-button-toggle>
+                  <mat-button-toggle [value]="6">土</mat-button-toggle>
+                </mat-button-toggle-group>
+              </div>
+
+              <!-- 毎月の場合の日付選択 -->
+              <mat-form-field *ngIf="form.get('repeat.frequency')?.value === '毎月'" appearance="outline">
+                <mat-label>日付</mat-label>
+                <mat-select formControlName="dayOfMonth">
+                  <mat-option *ngFor="let day of getDaysInMonth()" [value]="day">
+                    {{ day }}日
+                  </mat-option>
+                </mat-select>
+              </mat-form-field>
+
+              <!-- 毎年の場合の月と日の選択 -->
+              <div *ngIf="form.get('repeat.frequency')?.value === '毎年'" class="yearly-repeat-settings">
+                <mat-form-field appearance="outline">
+                  <mat-label>月</mat-label>
+                  <mat-select formControlName="month">
+                    <mat-option *ngFor="let month of [1,2,3,4,5,6,7,8,9,10,11,12]" [value]="month-1">
+                      {{ month }}月
+                    </mat-option>
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>日</mat-label>
+                  <mat-select formControlName="dayOfMonth">
+                    <mat-option *ngFor="let day of getDaysInMonth()" [value]="day">
+                      {{ day }}日
+                    </mat-option>
+                  </mat-select>
+                </mat-form-field>
+              </div>
+
+              <!-- 繰り返し終了日 -->
+              <mat-form-field appearance="outline">
+                <mat-label>繰り返し終了日（任意）</mat-label>
+                <input matInput [matDatepicker]="endDatePicker" formControlName="endDate">
+                <mat-datepicker-toggle matSuffix [for]="endDatePicker"></mat-datepicker-toggle>
+                <mat-datepicker #endDatePicker></mat-datepicker>
+              </mat-form-field>
+            </div>
+          </div>
+
+          <div class="date-time-section">
+            <mat-form-field appearance="outline">
+              <mat-label>締め切り日</mat-label>
+              <input matInput [matDatepicker]="picker" formControlName="dueDate">
+              <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+              <mat-datepicker #picker></mat-datepicker>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>締め切り時間</mat-label>
+              <input matInput [ngxMatTimepicker]="timePicker" formControlName="dueTime" readonly>
+              <ngx-mat-timepicker #timePicker></ngx-mat-timepicker>
+            </mat-form-field>
+          </div>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>目標完了日</mat-label>
+            <input matInput [matDatepicker]="targetPicker" formControlName="targetCompletionDate">
+            <mat-datepicker-toggle matSuffix [for]="targetPicker"></mat-datepicker-toggle>
+            <mat-datepicker #targetPicker></mat-datepicker>
+          </mat-form-field>
+        </div>
+
+        <!-- 関連リンク・ラベル・サブタスク・通知・メモ（元のUIを流用） -->
+        <div class="form-section">
+          <h3>関連リンク</h3>
+          <div formArrayName="relatedLinks">
+            <div *ngFor="let link of relatedLinks.controls; let i = index" class="link-item">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>URL {{ i + 1 }}</mat-label>
+                <input matInput [formControlName]="i" placeholder="https://">
+                <button type="button" mat-icon-button matSuffix (click)="removeLink(i)" [disabled]="relatedLinks.length <= 1">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </mat-form-field>
+            </div>
+          </div>
+          <button type="button" mat-button (click)="addLink()">
+            <mat-icon>add</mat-icon>
+            リンクを追加
+          </button>
+        </div>
+
+        <div class="form-section">
+          <h3>ラベル</h3>
+          <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+            <input matInput [formControl]="newLabelControl" placeholder="新しいラベル名" (keydown.enter)="addLabel()" style="flex:1;" />
+            <button mat-stroked-button color="primary" type="button" (click)="addLabel()">追加</button>
+          </div>
+          <div class="label-container">
+            <button type="button" mat-stroked-button *ngFor="let label of availableLabels"
+                    (click)="toggleLabel(label)"
+                    [class.selected]="isLabelSelected(label)"
+                    class="label-button">
+              <span class="label-color" [style.background-color]="label.color"></span>
+              {{ label.name }}
+            </button>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3>サブタスク</h3>
+          <div class="subtask-input">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>新しいサブタスク</mat-label>
+              <input matInput [(ngModel)]="newSubTaskTitle" [ngModelOptions]="{standalone: true}"
+                     placeholder="サブタスクを入力" (keyup.enter)="addSubTask()">
+              <button type="button" mat-icon-button matSuffix (click)="addSubTask()"
+                      [disabled]="!newSubTaskTitle.trim()">
+                <mat-icon>add</mat-icon>
+              </button>
+            </mat-form-field>
+          </div>
+          <div formArrayName="subTasks">
+            <div *ngFor="let subTask of subTasks.controls; let i = index" [formGroupName]="i" class="subtask-item">
+              <mat-checkbox formControlName="completed">
+                {{ subTask.get('title')?.value }}
+              </mat-checkbox>
+              <button type="button" mat-icon-button (click)="removeSubTask(i)">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3>通知設定</h3>
+          <app-notification-settings
+            [settings]="form.get('notification')?.value"
+            (settingsChange)="onNotificationSettingsChange($event)">
+          </app-notification-settings>
+        </div>
+
+        <div class="form-section">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>メモ</mat-label>
+            <textarea matInput formControlName="memo" rows="3" placeholder="詳細やメモを入力（任意）"></textarea>
+          </mat-form-field>
+        </div>
+      </ng-container>
+
+      <!-- スケジュールタブ -->
+      <ng-container *ngIf="activeTab === 'schedule'">
+        <div class="form-section">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>タイトル *</mat-label>
+            <input matInput formControlName="title" placeholder="スケジュールのタイトルを入力">
+            <mat-error *ngIf="isFieldInvalid('title')">
+              {{ getErrorMessage('title') }}
+            </mat-error>
+          </mat-form-field>
+
+          <div class="no-task-section">
+            <mat-checkbox formControlName="noTask">ノータスクゾーン</mat-checkbox>
+            <mat-icon matTooltip="タスクを作成せずリラックスする時間帯を決めましょう" class="info-icon">info</mat-icon>
+          </div>
+
+          <!-- 繰り返し設定を日付の前に移動 -->
+          <div class="form-section" formGroupName="repeat">
+            <h3>繰り返し設定</h3>
+            <mat-checkbox formControlName="enabled">繰り返し</mat-checkbox>
+            
+            <div *ngIf="form.get('repeat.enabled')?.value" class="repeat-settings">
+              <mat-form-field appearance="outline">
+                <mat-label>繰り返しの頻度</mat-label>
+                <mat-select formControlName="frequency">
+                  <mat-option value="毎日">毎日</mat-option>
+                  <mat-option value="毎週">毎週</mat-option>
+                  <mat-option value="毎月">毎月</mat-option>
+                  <mat-option value="毎年">毎年</mat-option>
+                </mat-select>
+              </mat-form-field>
+
+              <!-- 繰り返し開始日を追加 -->
+              <mat-form-field appearance="outline">
+                <mat-label>繰り返し開始日</mat-label>
+                <input matInput [matDatepicker]="startDatePicker2" formControlName="startDate">
+                <mat-datepicker-toggle matSuffix [for]="startDatePicker2"></mat-datepicker-toggle>
+                <mat-datepicker #startDatePicker2></mat-datepicker>
+              </mat-form-field>
+
+              <!-- 毎週の場合の曜日選択 -->
+              <div *ngIf="form.get('repeat.frequency')?.value === '毎週'" class="weekday-selector">
+                <mat-button-toggle-group formControlName="daysOfWeek" multiple>
+                  <mat-button-toggle [value]="0">日</mat-button-toggle>
+                  <mat-button-toggle [value]="1">月</mat-button-toggle>
+                  <mat-button-toggle [value]="2">火</mat-button-toggle>
+                  <mat-button-toggle [value]="3">水</mat-button-toggle>
+                  <mat-button-toggle [value]="4">木</mat-button-toggle>
+                  <mat-button-toggle [value]="5">金</mat-button-toggle>
+                  <mat-button-toggle [value]="6">土</mat-button-toggle>
+                </mat-button-toggle-group>
+              </div>
+
+              <!-- 毎月の場合の日付選択 -->
+              <mat-form-field *ngIf="form.get('repeat.frequency')?.value === '毎月'" appearance="outline">
+                <mat-label>日付</mat-label>
+                <mat-select formControlName="dayOfMonth">
+                  <mat-option *ngFor="let day of getDaysInMonth()" [value]="day">
+                    {{ day }}日
+                  </mat-option>
+                </mat-select>
+              </mat-form-field>
+
+              <!-- 毎年の場合の月と日の選択 -->
+              <div *ngIf="form.get('repeat.frequency')?.value === '毎年'" class="yearly-repeat-settings">
+                <mat-form-field appearance="outline">
+                  <mat-label>月</mat-label>
+                  <mat-select formControlName="month">
+                    <mat-option *ngFor="let month of [1,2,3,4,5,6,7,8,9,10,11,12]" [value]="month-1">
+                      {{ month }}月
+                    </mat-option>
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>日</mat-label>
+                  <mat-select formControlName="dayOfMonth">
+                    <mat-option *ngFor="let day of getDaysInMonth()" [value]="day">
+                      {{ day }}日
+                    </mat-option>
+                  </mat-select>
+                </mat-form-field>
+              </div>
+
+              <!-- 繰り返し終了日 -->
+              <mat-form-field appearance="outline">
+                <mat-label>繰り返し終了日（任意）</mat-label>
+                <input matInput [matDatepicker]="endDatePicker2" formControlName="endDate">
+                <mat-datepicker-toggle matSuffix [for]="endDatePicker2"></mat-datepicker-toggle>
+                <mat-datepicker #endDatePicker2></mat-datepicker>
+              </mat-form-field>
+            </div>
+          </div>
+
+          <div class="date-time-section">
+            <mat-form-field appearance="outline">
+              <mat-label>日付{{ form.get('repeat.enabled')?.value ? '' : ' *' }}</mat-label>
+              <input matInput [matDatepicker]="schedulePicker" formControlName="dueDate">
+              <mat-datepicker-toggle matSuffix [for]="schedulePicker"></mat-datepicker-toggle>
+              <mat-datepicker #schedulePicker></mat-datepicker>
+              <mat-error *ngIf="isFieldInvalid('dueDate')">
+                {{ getErrorMessage('dueDate') }}
+              </mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>開始時間 {{ form.get('repeat.enabled')?.value ? '' : ' *' }}</mat-label>
+              <input matInput [ngxMatTimepicker]="startTimePicker" formControlName="startTime" readonly>
+              <ngx-mat-timepicker #startTimePicker></ngx-mat-timepicker>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>終了時間 {{ form.get('repeat.enabled')?.value ? '' : ' *' }}  </mat-label>
+              <input matInput [ngxMatTimepicker]="endTimePicker" formControlName="endTime" readonly>
+              <ngx-mat-timepicker #endTimePicker></ngx-mat-timepicker>
+            </mat-form-field>
+          </div>
+
+          <mat-form-field appearance="outline">
+            <mat-label>カテゴリー</mat-label>
+            <mat-select formControlName="category" required>
+              <mat-option *ngFor="let category of categories" [value]="category">
+                {{category}}
+              </mat-option>
+              <mat-option (click)="onShowAddCategory($event)">
+                <mat-icon>add</mat-icon> 新規カテゴリー
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <div *ngIf="showAddCategory" style="margin: 8px 0 16px 0; display: flex; gap: 8px;">
+            <input matInput [formControl]="newCategoryControl" placeholder="新しいカテゴリー名" (keydown.enter)="addCategory()" style="flex:1;" />
+            <button mat-stroked-button color="primary" type="button" (click)="addCategory()">追加</button>
+            <button mat-button type="button" (click)="showAddCategory = false">キャンセル</button>
+          </div>
+
+        </div>
+
+        <div class="form-section">
+          <h3>ラベル</h3>
+          <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+            <input matInput [formControl]="newLabelControl" placeholder="新しいラベル名" (keydown.enter)="addLabel()" style="flex:1;" />
+            <button mat-stroked-button color="primary" type="button" (click)="addLabel()">追加</button>
+          </div>
+          <div class="label-container">
+            <button type="button" mat-stroked-button *ngFor="let label of availableLabels"
+                    (click)="toggleLabel(label)"
+                    [class.selected]="isLabelSelected(label)"
+                    class="label-button">
+              <span class="label-color" [style.background-color]="label.color"></span>
+              {{ label.name }}
+            </button>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3>関連リンク</h3>
+          <div formArrayName="relatedLinks">
+            <div *ngFor="let link of relatedLinks.controls; let i = index" class="link-item">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>URL {{ i + 1 }}</mat-label>
+                <input matInput [formControlName]="i" placeholder="https://">
+                <button type="button" mat-icon-button matSuffix (click)="removeLink(i)" [disabled]="relatedLinks.length <= 1">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </mat-form-field>
+            </div>
+          </div>
+          <button type="button" mat-button (click)="addLink()">
+            <mat-icon>add</mat-icon>
+            リンクを追加
+          </button>
+        </div>
+
+        <div class="form-section">
+          <h3>通知設定</h3>
+          <app-notification-settings
+            [settings]="form.get('notification')?.value"
+            (settingsChange)="onNotificationSettingsChange($event)">
+          </app-notification-settings>
+        </div>
+
+        <div class="form-section">
+          <h3>サブタスク</h3>
+          <div class="subtask-input">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>新しいサブタスク</mat-label>
+              <input matInput [(ngModel)]="newSubTaskTitle" [ngModelOptions]="{standalone: true}"
+                     placeholder="サブタスクを入力" (keyup.enter)="addSubTask()">
+              <button type="button" mat-icon-button matSuffix (click)="addSubTask()"
+                      [disabled]="!newSubTaskTitle.trim()">
+                <mat-icon>add</mat-icon>
+              </button>
+            </mat-form-field>
+          </div>
+          <div formArrayName="subTasks">
+            <div *ngFor="let subTask of subTasks.controls; let i = index" [formGroupName]="i" class="subtask-item">
+              <mat-checkbox formControlName="completed">
+                {{ subTask.get('title')?.value }}
+              </mat-checkbox>
+              <button type="button" mat-icon-button (click)="removeSubTask(i)">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>メモ</mat-label>
+            <textarea matInput formControlName="memo" rows="3" placeholder="詳細やメモを入力（任意）"></textarea>
+          </mat-form-field>
+        </div>
+      </ng-container>
+    </form>
+  </div>
+  
+  <!-- 固定フッター -->
+  <div class="form-footer">
+    <div class="form-actions">
+      <button type="button" mat-button (click)="onCancel()">キャンセル</button>
+      <button type="submit" mat-raised-button color="primary" [disabled]="form.invalid" (click)="onSubmit()">保存</button>
+    </div>
+  </div>
+</div>
+
+<style>
+.schedule-section {
+  margin: 20px 0;
+  padding: 15px;
+  border-radius: 4px;
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.schedule-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.cross-day-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #f57c00;
+  margin-top: 8px;
+}
+
+.cross-day-info mat-icon {
+  font-size: 20px;
+  height: 20px;
+  width: 20px;
+}
+</style>

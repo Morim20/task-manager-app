@@ -1,0 +1,293 @@
+<!-- src/app/components/task-list/task-list.component.html -->
+<div class="task-manager-container">
+  <!-- ヘッダー部分 -->
+  <div class="header-card">
+    <div class="header-content">
+      <h1>TODO管理</h1>
+      <div class="view-toggle">
+        <mat-button-toggle-group [value]="viewMode" (change)="toggleViewMode()">
+          <mat-button-toggle value="list">
+            <mat-icon>view_list</mat-icon>
+            リスト
+          </mat-button-toggle>
+          <mat-button-toggle value="kanban">
+            <mat-icon>view_column</mat-icon>
+            カンバン
+          </mat-button-toggle>
+        </mat-button-toggle-group>
+      </div>
+    </div>
+    
+    <!-- カテゴリータブ -->
+    <div class="category-tabs" cdkDropList cdkDropListOrientation="horizontal" (cdkDropListDropped)="onCategoryDrop($event)">
+      <!-- すべてのカテゴリーを表示するタブを追加 -->
+      <button
+        [class.active]="selectedCategory === 'すべて'"
+        (click)="selectCategory('すべて')">
+        すべて
+      </button>
+      <!-- 既存のカテゴリータブ -->
+      <button *ngFor="let category of categories"
+              [class.active]="selectedCategoryId === category.id"
+              (click)="selectCategoryById(category.id)"
+              cdkDrag
+              [cdkDragData]="category">
+        {{category.name}}
+      </button>
+    </div>
+  </div>
+
+  <!-- リストビュー -->
+  <div class="task-list" *ngIf="viewMode === 'list'" 
+       cdkDropList 
+       cdkDropListOrientation="vertical"
+       [cdkDropListData]="filteredTasks" 
+       (cdkDropListDropped)="onListTaskDrop($event)"
+       id="list-tasks"
+       [cdkDropListSortingDisabled]="false"
+       [cdkDropListAutoScrollDisabled]="false"
+       [cdkDropListAutoScrollStep]="10">
+    <div class="task-list-header">
+      <div class="task-list-col name-col">Name</div>
+      <div class="task-list-col due-col">Due date / Time</div>
+      <div class="task-list-col add-col"></div>
+    </div>
+    <div *ngFor="let task of filteredTasks; let i = index" 
+         class="task-card" 
+         [class.completed]="task.completed" 
+         cdkDrag 
+         [cdkDragData]="task"
+         [attr.data-order]="task.order"
+         (keydown.enter)="$event.stopPropagation()">
+      <!-- ドラッグプレースホルダー -->
+      <div *cdkDragPlaceholder class="task-placeholder"></div>
+      
+      <!-- ドラッグプレビュー -->
+      <div *cdkDragPreview class="list-drag-preview">
+        <div class="task-header-row">
+          <div class="task-list-col name-col">
+            <span class="task-title">{{task.title}}</span>
+          </div>
+          <div class="task-list-col due-col">
+            <span class="due-date" [ngClass]="{'small-text': selectedCategory === 'すべて'}">
+              <span *ngIf="task.dueDate">{{task.dueDate | date:'yyyy/MM/dd'}}</span>
+              <span *ngIf="task.dueDate && task.dueTime && selectedCategory === 'すべて'">｜</span>
+              <mat-icon *ngIf="task.dueTime">schedule</mat-icon>
+              <span *ngIf="task.dueTime">{{task.dueTime}}</span>
+            </span>
+            <span class="category-badge" [ngClass]="{'small-text': selectedCategory === 'すべて'}">
+              {{ getCategoryName(task.categoryId) }}
+            </span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="task-card-wrapper">
+        <!-- タスクヘッダー行（全体をドラッグハンドルとして指定） -->
+        <div class="task-header-row"
+             cdkDragHandle
+             [class.has-subtasks]="task.subTasks && task.subTasks.length > 0">
+          <div class="task-list-col name-col handle-padding" (click)="$event.stopPropagation(); task.subTasks && task.subTasks.length > 0 ? toggleExpandTask(task.id) : null">
+            <mat-checkbox [checked]="task.completed" (change)="toggleComplete(task)" color="primary" (click)="$event.stopPropagation()"></mat-checkbox>
+            <span class="task-title">{{task.title}}</span>
+          </div>
+          <div class="task-list-col due-col">
+            <mat-icon *ngIf="task.dueDate && selectedCategory !== 'すべて'">event</mat-icon>
+            <span *ngIf="task.dueDate">{{task.dueDate | date:'yyyy/MM/dd'}}</span>
+            <span *ngIf="task.dueDate && task.dueTime && selectedCategory === 'すべて'">｜</span>
+            <mat-icon *ngIf="task.dueTime && selectedCategory !== 'すべて'">schedule</mat-icon>
+            <span *ngIf="task.dueTime">{{task.dueTime}}</span>
+            <span *ngIf="selectedCategory === 'すべて' && task.categoryId" class="task-category-badge">{{getCategoryName(task.categoryId)}}</span>
+            <span *ngIf="selectedCategory === 'すべて' && !task.categoryId" class="task-category-badge">未分類</span>
+          </div>
+          <div class="task-list-col add-col">
+            <button mat-icon-button 
+                    (click)="showSubTaskInputField(task.id.toString(), $event)" 
+                    matTooltip="サブタスクを追加"
+                    class="subtask-add-button">
+              <mat-icon>add</mat-icon>
+            </button>
+            <button mat-icon-button 
+                    color="warn" 
+                    *ngIf="!task.archived" 
+                    (click)="$event.stopPropagation(); archiveTask(task)"
+                    matTooltip="タスク一覧からアーカイブ">
+              <mat-icon class="archive-icon">archive</mat-icon>
+            </button>
+            <button mat-icon-button 
+                    color="primary" 
+                    *ngIf="task.archived" 
+                    (click)="$event.stopPropagation(); restoreTask(task)"
+                    matTooltip="復元">
+              <mat-icon>unarchive</mat-icon>
+            </button>
+            <button mat-icon-button
+                    (click)="$event.stopPropagation(); openTaskDetailDialog(task)"
+                    matTooltip="詳細を見る">
+              <mat-icon>more_vert</mat-icon>
+            </button>
+          </div>
+        </div>
+        
+        <!-- サブタスクリスト（独立した領域として配置） -->
+        <div class="subtask-area" 
+             *ngIf="expandedTask[task.id.toString()]" 
+             (click)="onTaskCardClick(task.id.toString())"
+             (keydown.enter)="$event.stopPropagation()">
+          <div class="subtask-list-block">
+            <!-- サブタスク一覧 -->
+            <div class="subtask-list" *ngIf="task.subTasks && task.subTasks.length" (click)="$event.stopPropagation()">
+              <div *ngFor="let sub of task.subTasks" class="subtask-item" (click)="$event.stopPropagation()">
+                <mat-checkbox [checked]="sub.completed" (change)="toggleSubTask(task, sub.id)"></mat-checkbox>
+                <div class="subtask-content" *ngIf="!editingSubTask[task.id.toString()]?.[sub.id]">
+                  <span [class.completed]="sub.completed">{{sub.title}}</span>
+                  <div class="subtask-actions">
+                    <button mat-icon-button (click)="startEditSubTask(task, sub.id)" class="edit-button">
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                    <button mat-icon-button (click)="deleteSubTask(task, sub.id)" class="delete-button">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </div>
+                </div>
+                <div class="subtask-edit" *ngIf="editingSubTask[task.id.toString()]?.[sub.id]">
+                  <input
+                    type="text"
+                    [id]="'edit-subtask-' + task.id.toString() + '-' + sub.id"
+                    [(ngModel)]="editedSubTaskText[task.id.toString()][sub.id]"
+                    (keyup.enter)="saveEditSubTask(task, sub.id)"
+                    (keyup.escape)="cancelEditSubTask(task.id.toString(), sub.id)"
+                    (blur)="saveEditSubTask(task, sub.id)"
+                    class="edit-input"
+                    autofocus
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- サブタスク入力欄 (完全に独立した要素として配置) -->
+          <div class="subtask-input-block" 
+               *ngIf="showSubTaskInput[task.id.toString()]" 
+               (click)="$event.stopPropagation()"
+               (keydown.enter)="$event.stopPropagation()">
+            <div class="subtask-input-row">
+              <input
+                type="text"
+                [attr.key]="subTaskInputKey[task.id.toString()]"
+                [id]="'subtask-input-' + task.id.toString()"
+                [ngModel]="getSubTaskInput(task.id.toString())"
+                (ngModelChange)="setSubTaskInput(task.id.toString(), $event)"
+                (focus)="setActiveSubTaskInput(task.id.toString())"
+                #subTaskInput
+                placeholder="サブタスクを入力してEnterで追加"
+                class="form-control"
+                (click)="$event.stopPropagation()"
+                (keyup.enter)="$event.stopPropagation(); addSubTask(task, $event)"
+                (keydown.enter)="$event.stopPropagation()"
+                (blur)="handleSubTaskInputBlur($event, task.id.toString())"
+                (keydown.escape)="showSubTaskInput[task.id.toString()]=false"
+                autocomplete="off"
+              >
+              <div class="subtask-input-buttons">
+                <button mat-icon-button 
+                        (click)="addSubTask(task, $event)" 
+                        color="primary" 
+                        class="add-button"
+                        matTooltip="サブタスクを追加">
+                  <mat-icon>add</mat-icon>
+                </button>
+                <button mat-icon-button 
+                        (click)="showSubTaskInput[task.id.toString()]=false; $event.stopPropagation()"
+                        matTooltip="閉じる">
+                  <mat-icon>close</mat-icon>
+                </button>
+              </div>
+            </div>
+            <div class="subtask-help-text" *ngIf="!task.subTasks?.length">
+              <small>このタスクに関連する小さなステップを追加できます</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- カンバンビュー -->
+  <div *ngIf="viewMode === 'kanban'" class="kanban-scroll-wrapper">
+    <div class="kanban-container"
+         cdkDropList
+         [cdkDropListData]="statuses"
+         (cdkDropListDropped)="onStatusDrop($event)">
+      <!-- 動的にステータスカラムを生成 -->
+      <div *ngFor="let status of statuses; let i = index"
+           class="kanban-column"
+           cdkDrag
+           [cdkDragData]="status">
+        <div class="kanban-grip">⋮⋮</div>
+        <h3 style="flex:1; cursor: pointer;"
+            [class.deletable-status]="canDeleteStatus(status)"
+            (click)="canDeleteStatus(status) && confirmDeleteStatus(status)">
+          {{status.name}} ({{getTasksByStatus(status).length}})
+        </h3>
+        <div class="kanban-list"
+             cdkDropList
+             [id]="'status-' + status.name"
+             #statusList="cdkDropList"
+             [cdkDropListData]="getTasksByStatus(status)"
+             [cdkDropListConnectedTo]="getConnectedLists(status)"
+             (cdkDropListDropped)="onTaskDrop($event, status)">
+          <div *ngFor="let task of getTasksByStatus(status)"
+               cdkDrag
+               [cdkDragData]="task"
+               class="task-card"
+               [class.no-task]="task.noTask"
+               (click)="openTaskDetailDialog(task)">
+            <span *ngIf="task.noTask" class="no-task-label">
+              ノータスクゾーン
+            </span>
+            <div class="task-placeholder" *cdkDragPlaceholder></div>
+            <div *cdkDragPreview class="drag-preview-container">
+              <div class="preview-title">{{task.title}}</div>
+            </div>
+            <div class="task-title" style="font-weight: 500; margin-bottom: 2px; display: flex; align-items: center;">
+              {{task.title}}
+              <a *ngIf="task.relatedLinks && task.relatedLinks.length > 0" [href]="task.relatedLinks[0]" target="_blank" matTooltip="関連リンク" class="link-icon" (click)="$event.stopPropagation()">
+                <mat-icon class="meta-icon">link</mat-icon>
+              </a>
+            </div>
+            <div class="task-labels" *ngIf="task.labels && task.labels.length > 0">
+              <span *ngFor="let label of task.labels" 
+                    class="task-label"
+                    [style.backgroundColor]="label.color">
+                {{label.name}}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 新規ステータス追加カラム -->
+      <div class="kanban-column add-status-column" *ngIf="selectedCategory !== 'すべて'">
+        <button mat-button class="add-status-button" (click)="openAddStatusDialog()">
+          <mat-icon>add</mat-icon>
+          <span>新しいステータスを追加</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 独自削除確認パネル -->
+  <div *ngIf="showStatusDeleteBox" class="status-delete-box">
+    <div class="status-delete-box-inner">
+      <div class="status-delete-title">ステータス削除</div>
+      <div class="status-delete-message">
+        「<span class="status-delete-status">{{statusToDelete}}</span>」を本当に削除しますか？
+      </div>
+      <div class="status-delete-actions">
+        <button mat-stroked-button (click)="closeStatusDeleteBox()">キャンセル</button>
+        <button mat-flat-button color="warn" (click)="deleteStatusFromBox()">削除</button>
+      </div>
+    </div>
+  </div>
+</div>

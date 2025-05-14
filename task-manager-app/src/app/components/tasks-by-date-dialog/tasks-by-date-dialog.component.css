@@ -1,0 +1,87 @@
+:host ::ng-deep .mat-mdc-dialog-container,
+:host ::ng-deep .mat-mdc-dialog-container .mdc-dialog__surface,
+:host ::ng-deep .mdc-dialog__surface {
+  background: #fff !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 24px rgba(25, 118, 210, 0.13) !important;
+  padding: 24px !important;
+  color: #222;
+}
+
+/* カレンダーで選んだ日付のタスクをモーダル表示する画面のCSS */
+mat-dialog-content {
+    min-height: 200px;
+    max-height: 400px;
+    overflow-y: auto;
+  }
+  
+  .item-content {
+    flex: 1;
+  }
+  
+  .sub {
+    font-size: 0.875rem;
+    color: rgba(0,0,0,0.6);
+  }
+  
+  .empty {
+    text-align: center;
+    color: #777;
+    padding: 16px 0;
+  }
+  
+  .mat-mdc-raised-button {
+    margin: 8px;
+  }
+
+  .mat-mdc-table {
+    width: 100%;
+  }
+
+  .mat-mdc-calendar {
+    width: 100%;
+  }
+
+  .dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background: #ff7043;
+    border-radius: 50%;
+    margin-right: 8px;
+  }
+
+  .dot.no-task {
+    background: #90a4ae;
+  }
+
+  .task-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .task-title {
+    font-size: 14px;
+    color: rgba(0, 0, 0, 0.87);
+  }
+
+  .task-time {
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.6);
+  }
+
+  mat-list-item {
+    height: auto !important;
+    margin: 8px 0;
+  }
+
+  h3.mat-subheader {
+    color: #1976d2;
+    font-weight: 500;
+  }
+
+  mat-divider {
+    margin: 16px 0;
+  }
+    

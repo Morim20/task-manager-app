@@ -1,0 +1,51 @@
+/* アプリのルート。ツールバー＋<router-outlet>の骨組みを担当。 */
+
+/* ツールバー内で間を自動的に詰める */
+.spacer {
+    flex: 1 1 auto;
+  }
+  
+  /* 全体の余白と背景色 */
+  :host {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+  
+  main {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 64px);
+    padding: 0;
+    background: #f5f5f5;
+  }
+  
+  /* Material のベースフォント */
+  body {
+    margin: 0;
+    font-family: Roboto, "Helvetica Neue", sans-serif;
+  }
+  
+  mat-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+  }
+  
+  /* ヘッダー下に余白が欲しい場合 */
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+mat-toolbar {
+  flex: 0 0 auto;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+router-outlet {
+  flex: 1 1 auto;
+  display: block;
+}

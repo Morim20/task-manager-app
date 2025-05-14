@@ -1,0 +1,109 @@
+<div style="text-align: left; margin-bottom: 8px;">
+  <button mat-stroked-button color="primary" [routerLink]="['/projects']">
+    <mat-icon>arrow_back</mat-icon> 戻る
+  </button>
+</div>
+<div class="project-detail-container">
+  <h2 class="project-title">{{ category?.name }}</h2>
+  <!-- 基本情報（説明・日付いずれかがある場合のみ表示） -->
+  <mat-card class="section-card"
+    *ngIf="category && (category.description || category.startDate || category.dueDate)">
+    <mat-card-subtitle *ngIf="category.description">{{ category.description }}</mat-card-subtitle>
+    <div class="project-dates" *ngIf="category.startDate || category.dueDate">
+      <span *ngIf="category.startDate">開始日: {{ category.startDate | date:'yyyy/MM/dd' }}</span>
+      <span *ngIf="category.dueDate">終了予定日: {{ category.dueDate | date:'yyyy/MM/dd' }}</span>
+    </div>
+  </mat-card>
+
+  <!-- 前提情報メモ -->
+  <mat-card class="section-card" *ngIf="category">
+    <div class="memo-header">
+      <mat-card-title>前提情報・メモ・目的目標</mat-card-title>
+      <button mat-icon-button (click)="startEditMemo()" *ngIf="!isEditingMemo" aria-label="編集">
+        <mat-icon>edit</mat-icon>
+      </button>
+    </div>
+    <form *ngIf="isEditingMemo" (ngSubmit)="saveMemo()">
+      <div class="memo-area">
+        <textarea matInput [(ngModel)]="editMemoValue" name="editMemoValue" placeholder="プロジェクトの注意点や要件、議事録などを記入"></textarea>
+      </div>
+      <button mat-raised-button color="primary" type="submit" [disabled]="isSavingMemo">保存</button>
+      <button mat-button type="button" (click)="cancelEditMemo()" [disabled]="isSavingMemo">キャンセル</button>
+    </form>
+    <div *ngIf="!isEditingMemo" class="memo-view">
+      <div *ngIf="category.memo; else noMemo">{{ category.memo }}</div>
+      <ng-template #noMemo><span class="memo-placeholder">（未記入）</span></ng-template>
+    </div>
+  </mat-card>
+
+  <!-- 資料・リンク一覧 -->
+  <mat-card class="section-card">
+    <mat-card-title>資料・リンク一覧</mat-card-title>
+    <button mat-stroked-button color="primary" (click)="showLinkForm = true" *ngIf="!showLinkForm">
+      ＋ 関連リンクを追加
+    </button>
+    <form *ngIf="showLinkForm" (ngSubmit)="addLink()">
+      <input [(ngModel)]="newLinkLabel" name="label" placeholder="資料名・説明" required class="edit-input" />
+      <input [(ngModel)]="newLinkUrl" name="url" placeholder="URLまたはファイル名" required class="edit-input" />
+      <button mat-raised-button color="primary" type="submit">追加</button>
+      <button mat-button type="button" (click)="cancelAddLink()">キャンセル</button>
+    </form>
+    <ul>
+      <li *ngFor="let link of links">
+        <a *ngIf="link.url" [href]="link.url" target="_blank">{{ link.label }}</a>
+        <span *ngIf="!link.url">{{ link.label }}</span>
+      </li>
+    </ul>
+  </mat-card>
+
+  <!-- 進捗ダッシュボード -->
+  <div class="dashboard-row">
+    <!-- 進捗カード -->
+    <mat-card class="section-card dashboard-progress">
+      <mat-card-title>進捗</mat-card-title>
+      <mat-progress-bar mode="determinate" [value]="progressValue"></mat-progress-bar>
+      <div class="progress-label">{{ completedCount }} / {{ totalCount }} タスク完了</div>
+      <ngx-charts-pie-chart
+        [results]="pieChartData"
+        [labels]="true"
+        [doughnut]="true"
+        [view]="[320,240]"
+        [animations]="false"
+        style="margin: 16px auto 0 auto;">
+      </ngx-charts-pie-chart>
+    </mat-card>
+    <!-- 累計完了数だけのカード -->
+    <mat-card class="section-card dashboard-chart">
+      <div class="total-completed-highlight" style="margin: 40px 0 32px 0; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+        <span class="total-completed-label" style="font-size:1.25rem; margin-bottom: 16px;">累計完了タスク数</span>
+        <span class="total-completed-number" style="font-size:4.2rem; margin-bottom: 32px;">{{ totalCompleted }}</span>
+        <div class="progress-label" style="margin-top: 12px; display: flex; flex-direction: column; align-items: center;">
+          <span style="font-size:1.25rem; color:#444; font-weight:400; margin-bottom: 8px;">完了率</span>
+          <span style="font-size:3.2rem; font-weight:bold; color:#1976d2; line-height:1.1;">{{ progressValue | number:'1.0-1' }}<span style="font-size:1.5rem; font-weight:normal;">%</span></span>
+        </div>
+      </div>
+    </mat-card>
+  </div>
+
+  <!-- タスク一覧 -->
+  <mat-card class="section-card">
+    <mat-card-title>タスク一覧</mat-card-title>
+    <ul *ngIf="tasks.length > 0" class="todo-list">
+      <li *ngFor="let task of tasks" class="task-list-item" [class.completed]="task.completed">
+        <mat-checkbox color="primary"
+          [checked]="task.completed"
+          (change)="completeTask(task)"
+          (click)="$event.stopPropagation()"
+        ></mat-checkbox>
+        <span class="task-title">{{ task.title }}</span>
+        <span class="task-date" *ngIf="task.dueDate">({{ task.dueDate | date:'yyyy/MM/dd' }})</span>
+        <span class="task-status" *ngIf="task.status">({{ task.status }})</span>
+        <span class="task-category-badge" *ngIf="task.categoryId">{{ getCategoryName(task.categoryId) }}</span>
+        <span class="task-actions">
+          <button mat-icon-button (click)="startEditTask(task)"><mat-icon>more_vert</mat-icon></button>
+        </span>
+      </li>
+    </ul>
+    <div *ngIf="tasks.length === 0" class="no-tasks">未完了タスクはありません</div>
+  </mat-card>
+</div> 

@@ -1,0 +1,39 @@
+<!-- カレンダーで選んだ日付のタスクをモーダル表示する画面のHTML -->
+<h2 mat-dialog-title>{{ data.date | date:'yyyy年M月d日' }}のタスク一覧</h2>
+
+<mat-dialog-content>
+  <mat-list>
+    <!-- 終日タスク -->
+    <div *ngIf="getAllDayTasks().length > 0">
+      <h3 mat-subheader>終日</h3>
+      <mat-list-item *ngFor="let task of getAllDayTasks()">
+        <span class="dot" [class.no-task]="task.noTask"></span>
+        <span class="task-title">{{ task.title }}</span>
+      </mat-list-item>
+      <mat-divider></mat-divider>
+    </div>
+
+    <!-- 時間指定タスク -->
+    <div *ngIf="getTimedTasks().length > 0">
+      <h3 mat-subheader>時間指定</h3>
+      <mat-list-item *ngFor="let task of getTimedTasks()">
+        <span class="dot" [class.no-task]="task.noTask"></span>
+        <div class="task-info">
+          <span class="task-title">{{ task.title }}</span>
+          <span class="task-time" *ngIf="task.startTime && task.endTime">
+            {{ task.startTime }} - {{ task.endTime }}
+          </span>
+          <span class="task-time" *ngIf="task.dueTime && !task.startTime">
+            期限: {{ task.dueTime }}
+          </span>
+        </div>
+      </mat-list-item>
+    </div>
+  </mat-list>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>閉じる</button>
+</mat-dialog-actions>
+  
+  

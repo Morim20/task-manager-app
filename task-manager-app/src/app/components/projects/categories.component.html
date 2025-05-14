@@ -1,0 +1,14 @@
+<div class="categories-container">
+  <h1>カテゴリー一覧</h1>
+  <mat-card *ngFor="let category of categories" class="category-card">
+    <mat-card-header>
+      <mat-card-title>{{ category.name }}</mat-card-title>
+      <mat-card-subtitle *ngIf="category.description">{{ category.description }}</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <a [routerLink]="['/categories', category.id]" mat-raised-button color="primary">
+        詳細を見る
+      </a>
+    </mat-card-content>
+  </mat-card>
+</div> 

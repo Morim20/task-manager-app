@@ -1,0 +1,76 @@
+<!-- src/app/components/projects/projects.component.html -->
+<div class="projects-dashboard">
+  <div class="projects-container">
+    <h1><mat-icon>person</mat-icon> プロジェクトカテゴリー</h1>
+    <div class="category-grid">
+      <ng-container *ngIf="creatingCategory">
+        <mat-card class="category-card category-edit-card">
+          <form (ngSubmit)="saveNewCategory()" style="width:100%;display:flex;flex-direction:column;align-items:center;gap:16px;">
+            <mat-form-field appearance="outline" style="width:100%;">
+              <mat-label>カテゴリー名</mat-label>
+              <input matInput [(ngModel)]="newCategoryName" name="newCategoryName" maxlength="32" placeholder="例: プロジェクトA" required autofocus>
+            </mat-form-field>
+            <div class="edit-actions">
+              <button mat-button type="button" (click)="cancelNewCategory()">キャンセル</button>
+              <button mat-flat-button color="primary" type="submit" [disabled]="!newCategoryName.trim()">保存</button>
+            </div>
+          </form>
+        </mat-card>
+      </ng-container>
+      <ng-container *ngFor="let category of categories; let i = index">
+        <mat-card class="category-card" [routerLink]="['/projects', category.id]" [ngClass]="{'disabled': category.id === 'new'}" *ngIf="category.id !== 'new'">
+          <div class="category-row-center" style="position: relative;">
+            <ng-container *ngIf="editingCategory?.id === category.id; else normalView">
+              <!-- 編集フォームをカード内に表示 -->
+              <form (ngSubmit)="onEditCategorySave()" style="width:100%;display:flex;flex-direction:column;align-items:center;gap:4px;padding-top:4px;" (click)="$event.stopPropagation()">
+                <mat-form-field appearance="outline" style="width:100%; font-size:0.95em; margin-bottom: 4px;" (click)="$event.stopPropagation()">
+                  <mat-label>カテゴリー名</mat-label>
+                  <input matInput [(ngModel)]="editCategoryName" name="editCategoryName" maxlength="32" placeholder="例: プロジェクトA" required autofocus (click)="$event.stopPropagation()">
+                </mat-form-field>
+                <div class="edit-actions" style="width:100%;display:flex;justify-content:center;gap:8px; margin-top: 0;">
+                  <button mat-button type="button" (click)="onEditCategoryCancel(); $event.stopPropagation()" style="min-width:64px; font-size:0.95em;">キャンセル</button>
+                  <button mat-flat-button color="primary" type="submit" [disabled]="!editCategoryName.trim()" style="min-width:64px; font-size:0.95em;" (click)="$event.stopPropagation()">保存</button>
+                </div>
+              </form>
+            </ng-container>
+            <ng-template #normalView>
+              <ng-container *ngIf="deletingCategory?.id === category.id; else normalCardView">
+                <!-- 削除確認UIをカード内で表示 -->
+                <div style="width:100%;display:flex;flex-direction:column;align-items:center;gap:12px;padding:16px 0 8px 0;">
+                  <div style="font-size:1.1em;font-weight:bold;color:#222;margin-bottom:8px;">本当に削除しますか？</div>
+                  <div style="color:#888;margin-bottom:8px;">「{{category.name}}」を削除します。</div>
+                  <div style="display:flex;gap:8px;justify-content:center;width:100%;">
+                    <button mat-button type="button" (click)="cancelDeleteCategory(); $event.stopPropagation()" style="min-width:64px;">キャンセル</button>
+                    <button mat-flat-button color="warn" type="button" (click)="confirmDeleteCategory(category); $event.stopPropagation()" style="min-width:64px;">削除</button>
+                  </div>
+                </div>
+              </ng-container>
+              <ng-template #normalCardView>
+                <div class="category-name-center">{{ category.name }}</div>
+                <button mat-icon-button class="category-menu-btn-inline" (click)="$event.stopPropagation(); openCategoryMenu(category)">
+                  <mat-icon>more_vert</mat-icon>
+                </button>
+                <ng-container *ngIf="selectedCategoryForMenu?.id === category.id">
+                  <div class="category-menu-card inside-card-menu" (click)="$event.stopPropagation()">
+                    <button mat-menu-item (click)="onEditCategory(category); $event.stopPropagation()">
+                      <mat-icon>edit</mat-icon>
+                      <span>編集</span>
+                    </button>
+                    <button mat-menu-item (click)="onDeleteCategory(category); $event.stopPropagation()">
+                      <mat-icon color="warn">delete</mat-icon>
+                      <span style="color:#d32f2f;">削除</span>
+                    </button>
+                  </div>
+                </ng-container>
+              </ng-template>
+            </ng-template>
+          </div>
+        </mat-card>
+      </ng-container>
+      <mat-card class="category-card create-card" (click)="onCreateCategory()" *ngIf="!creatingCategory">
+        新しいカテゴリーを作成
+      </mat-card>
+    </div>
+  </div>
+</div>
+  

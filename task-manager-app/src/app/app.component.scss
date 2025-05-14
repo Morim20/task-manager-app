@@ -1,0 +1,68 @@
+/* アプリケーションのスタイル */ 
+
+/* src/app/app.component.scss */
+
+:host {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+  
+  .app-header {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    flex: 0 0 auto;
+  }
+  
+  /* router-outlet の直下を伸ばす */
+  router-outlet {
+    flex: 1 1 auto;
+    display: block;
+    overflow: hidden; /* Dashboard 内でスクロールさせるなら */
+  }
+  
+  main {
+    width: 100%;
+    min-height: calc(100vh - 64px); // ツールバーの高さを引く
+    background-color: #f8f9fa;
+  }
+  
+  .spacer {
+    flex: 1 1 auto;
+  }
+  
+  /* サイドバー関連のスタイル */
+  .sidenav-container {
+    height: calc(100vh - 64px); // ツールバーの高さを引く
+    position: relative;
+  }
+  
+  .sidenav {
+    width: 240px;
+    background: white;
+    border-right: 1px solid #e0e0e0;
+  }
+  
+  /* サイドバーが開いてるときと閉じてるときのコンテンツ位置調整 */
+  mat-sidenav-content {
+    padding: 0 !important;
+    margin: 0 !important;
+    transition: margin-left 0.3s ease;
+  }
+  
+  /* サイドバーが開いているときのメインコンテンツ */
+  .sidenav.mat-drawer-opened ~ mat-sidenav-content {
+    margin-left: 240px !important; /* サイドバーと同じ幅 */
+  }
+  
+  /* サイドバーが閉じているときのメインコンテンツ */
+  .sidenav:not(.mat-drawer-opened) ~ mat-sidenav-content {
+    margin-left: 0 !important;
+  }
+  
+  /* メインコンテンツをサイドバーに寄せる */
+  mat-sidenav-content main {
+    padding: 0;
+  }
+  

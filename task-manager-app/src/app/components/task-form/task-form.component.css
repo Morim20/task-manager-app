@@ -1,0 +1,32 @@
+/* タスク追加・編集画面のCSS */
+
+.form-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .full-width {
+    width: 100%;
+  }
+  
+  .row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .mat-mdc-raised-button {
+    margin: 8px;
+  }
+
+  .mat-mdc-table {
+    width: 100%;
+  }
+  /* task-form.component.scss */
+.time-block, .subtask, [formArrayName="links"] > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}

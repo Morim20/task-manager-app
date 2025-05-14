@@ -1,0 +1,232 @@
+:host {
+  display: block;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.task-form-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  position: relative;
+  background-color: #fff;
+  
+  .form-header {
+    background: #1976d2 !important;
+    color: #fff !important;
+    position: sticky;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 36px 0 28px 0;
+    box-shadow: 0 2px 4px rgba(25, 118, 210, 0.08);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 96px;
+
+    h2 {
+      margin: 0;
+      font-size: 2.2rem;
+      color: #fff !important;
+      line-height: 1.2;
+      font-weight: bold;
+      letter-spacing: 0.05em;
+      text-align: center;
+      width: 100%;
+      padding-left: 1em;
+      padding-top: 1em;
+    }
+  }
+  
+  .task-form-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    max-width: 600px;
+    margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box;
+    height: calc(100vh - 120px); // ヘッダーとフッターの高さを考慮
+
+    h2 {
+      margin-bottom: 20px;
+    }
+
+    .form-section {
+      margin-bottom: 24px;
+
+      h3 {
+        margin-bottom: 12px;
+      }
+    }
+
+    .full-width {
+      width: 100%;
+    }
+
+    .link-item {
+      margin-bottom: 12px;
+    }
+
+    .label-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+
+      .label-button {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+
+        &.selected {
+          background-color: #e3f2fd;
+          border-color: #2196f3;
+        }
+
+        .label-color {
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+        }
+      }
+    }
+
+    .subtask-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px;
+      margin-bottom: 8px;
+      background-color: #f5f5f5;
+      border-radius: 4px;
+    }
+  }
+
+  .form-footer {
+    background: #1976d2 !important;
+    color: #fff !important;
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    box-shadow: 0 -2px 8px rgba(25, 118, 210, 0.08);
+    padding: 16px 20px;
+    z-index: 100;
+
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      max-width: 600px;
+      margin: 0 auto;
+      
+      button {
+        color: #1976d2;
+        background: #fff;
+        border-radius: 4px;
+        font-weight: bold;
+      }
+      button[mat-raised-button][color='primary'] {
+        background: #fff;
+        color: #1976d2;
+      }
+    }
+  }
+}
+
+mat-dialog-actions {
+  padding: 16px 0 0;
+  margin-bottom: 0;
+  gap: 8px;
+}
+
+.time-block {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  background-color: #fafafa;
+
+  mat-form-field {
+    flex: 1;
+  }
+
+  button {
+    margin-left: auto;
+  }
+}
+
+.repeat-settings {
+  margin-top: 16px;
+  padding: 16px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+
+  mat-form-field {
+    width: 100%;
+    margin-bottom: 16px;
+  }
+
+  .weekday-selector {
+    margin: 16px 0;
+
+    mat-button-toggle-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    mat-button-toggle {
+      ::ng-deep .mat-button-toggle-label-content {
+        line-height: 36px;
+        padding: 0 16px;
+      }
+
+      &.mat-button-toggle-checked {
+        background-color: #1976d2;
+        color: white;
+      }
+    }
+  }
+}
+
+// タイムピッカーのオーバーレイ背景を明るく
+::ng-deep .ngx-mat-timepicker-overlay {
+  background: rgba(255,255,255,0.95) !important;
+}
+
+// タイムピッカーのダイアログ自体も明るく
+::ng-deep .ngx-mat-timepicker-content {
+  background: #fff !important;
+  color: #222 !important;
+}
+
+// 時計の円盤部分に枠線を追加
+::ng-deep .ngx-mat-timepicker-dial {
+  background: #fff !important;
+  border-radius: 50% !important;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.10) !important;
+  border: 2px solid #1976d2 !important;
+}
+
+.no-task-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0;
+
+  .info-icon {
+    font-size: 18px;
+    height: 18px;
+    width: 18px;
+    color: rgba(0, 0, 0, 0.54);
+    cursor: help;
+  }
+}
+  

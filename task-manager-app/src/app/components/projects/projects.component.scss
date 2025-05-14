@@ -1,0 +1,347 @@
+/* Projects component styles */ 
+
+.projects-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 900px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  h1 {
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1.5rem;
+  }
+
+  .category-grid {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 20px;
+    justify-items: center;
+  }
+
+  .category-card {
+    width: 260px;
+    height: 180px;
+    min-width: 260px;
+    min-height: 180px;
+    max-width: 260px;
+    max-height: 180px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 16px;
+    font-size: 1.18rem;
+    font-weight: 700;
+    background: #fff;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+    margin: 0;
+    padding: 0 12px;
+  }
+
+  .category-row-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    gap: 8px;
+    position: relative;
+  }
+
+  .category-name-center {
+    text-align: center;
+    font-size: 1.18rem;
+    font-weight: 700;
+    word-break: break-all;
+    box-sizing: border-box;
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+  }
+
+  .category-menu-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 2;
+  }
+
+  .category-menu-btn-inline {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 2;
+    margin-left: 0;
+    align-self: flex-start;
+  }
+
+  .create-card {
+    background: #f5f6f8;
+    color: #223;
+    font-weight: normal;
+    border: 2px dashed #d0d0d0;
+    &:hover {
+      background: #e0e3e8;
+    }
+  }
+
+  .form-card {
+    margin-bottom: 20px;
+    
+    mat-card-content {
+      form {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+
+        mat-form-field {
+          width: 100%;
+        }
+
+        .form-actions {
+          display: flex;
+          justify-content: flex-end;
+          gap: 8px;
+          margin-top: 16px;
+        }
+      }
+    }
+  }
+
+  .projects-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+
+    .project-card {
+      mat-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+
+        .project-info {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+
+          h3 {
+            margin: 0;
+            font-size: 1.2rem;
+          }
+
+          .project-type {
+            font-size: 0.8rem;
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
+            width: fit-content;
+
+            &.personal {
+              background-color: #e3f2fd;
+              color: #1976d2;
+            }
+
+            &.team {
+              background-color: #f3e5f5;
+              color: #9c27b0;
+            }
+          }
+        }
+      }
+
+      .task-count {
+        margin-top: 16px;
+        color: rgba(0, 0, 0, 0.6);
+      }
+    }
+  }
+
+  .add-project-button {
+    width: 100%;
+    height: 100%;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background-color: #fafafa;
+    border: 2px dashed #e0e0e0;
+    
+    &:hover {
+      background-color: #f5f5f5;
+      border-color: #bdbdbd;
+    }
+
+    mat-icon {
+      font-size: 24px;
+      width: 24px;
+      height: 24px;
+    }
+  }
+
+  .category-menu-card {
+    background: #fff;
+    border: 1.5px solid #e0e0e0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    margin: 0 0 16px 0;
+    padding: 12px 0 8px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    z-index: 10;
+    button[mat-menu-item] {
+      width: 100%;
+      justify-content: flex-start;
+      font-size: 1rem;
+      font-weight: 500;
+      padding: 8px 16px;
+      border-radius: 6px;
+      &:hover {
+        background: #f5f5f5;
+      }
+    }
+  }
+
+  .category-edit-card {
+    background: #fff;
+    border: 2px solid #1976d2;
+    box-shadow: 0 2px 12px rgba(25, 118, 210, 0.08);
+    margin: 0 0 16px 0;
+    padding: 20px 24px 16px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    z-index: 10;
+    .edit-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .edit-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 12px;
+      width: 100%;
+    }
+  }
+}
+
+.projects-dashboard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  width: 100vw;
+  background: #f5f5f5;
+  box-sizing: border-box;
+}
+
+.cdk-overlay-backdrop,
+.mat-overlay-backdrop {
+  background: transparent !important;
+  opacity: 0 !important;
+}
+
+.mat-dialog-container.create-board-dialog-card,
+.mat-dialog-container[role='dialog'].create-board-dialog-card {
+  background: #fff !important;
+  border-radius: 14px !important;
+  box-shadow: 0 4px 24px rgba(25, 118, 210, 0.13) !important;
+  padding: 28px 28px 18px 28px !important;
+  max-width: 400px;
+  margin: 32px auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.create-board-dialog-card h2[mat-dialog-title] {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 18px;
+  color: #1976d2;
+}
+
+.create-board-dialog-card mat-dialog-content {
+  margin-bottom: 18px;
+}
+
+.create-board-dialog-card mat-dialog-actions {
+  margin-top: 12px;
+}
+
+// 新規カテゴリー作成ダイアログ用のシンプルなスタイル
+.create-category-dialog {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 4px 24px rgba(25, 118, 210, 0.13);
+  padding: 32px 32px 24px 32px;
+  max-width: 420px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.create-category-dialog h2[mat-dialog-title] {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 18px;
+  color: #1976d2;
+  text-align: center;
+}
+
+.create-category-dialog mat-dialog-content {
+  margin-bottom: 18px;
+}
+
+.create-category-dialog mat-dialog-actions {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+// 親のmat-dialog-containerの幅制限を解除
+::ng-deep .mat-dialog-container {
+  max-width: none !important;
+  width: auto !important;
+  padding: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.inside-card-menu {
+  position: absolute;
+  top: 36px;
+  right: 16px;
+  z-index: 10;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+  padding: 12px 0 8px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 120px;
+} 

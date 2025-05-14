@@ -1,0 +1,20 @@
+<ng-container *ngIf="project">
+  <mat-card class="personal-project-card">
+    <mat-card-header>
+      <mat-card-title>個人プロジェクト</mat-card-title>
+      <mat-card-subtitle>{{ project.name }}</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <div *ngIf="project.description">
+        <h4>説明</h4>
+        <p>{{ project.description }}</p>
+      </div>
+      <h4>タスク一覧</h4>
+      <mat-list>
+        <mat-list-item *ngFor="let t of tasks">
+          {{ t.title }} ({{ t.status }})
+        </mat-list-item>
+      </mat-list>
+    </mat-card-content>
+  </mat-card>
+</ng-container> 

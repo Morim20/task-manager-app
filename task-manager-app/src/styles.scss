@@ -1,0 +1,295 @@
+/* styles.scss */
+
+// グローバルスタイル
+@use '@angular/material' as mat;
+
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+}
+
+body {
+  background-color: #f8f9fa;
+}
+
+// Material Design Overrides - ダイアログスタイル修正
+// .mat-mdc-dialog-container の透明化は削除
+
+// タスクフォームダイアログのグローバルスタイル
+.task-form-dialog {
+  // ダイアログコンテナの修正
+  .mat-mdc-dialog-container, 
+  .mat-dialog-container, 
+  .mdc-dialog__container {
+    padding: 0 !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  // ダイアログサーフェスの修正
+  .mdc-dialog__surface {
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    max-height: 90vh !important;
+    height: auto !important;
+    min-height: 400px !important;
+    background-color: white !important;
+    border-radius: 8px !important;
+    box-shadow: 0 5px 16px rgba(0, 0, 0, 0.15) !important;
+  }
+}
+
+/* ダイアログの青い背景を削除し、正しい表示に修正 */
+.cdk-overlay-container,
+.cdk-overlay-backdrop.cdk-overlay-backdrop-showing {
+  background-color: rgba(0, 0, 0, 0.32) !important;
+}
+
+/* ダイアログヘッダーとフッターの固定表示 */
+.dialog-header {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 100 !important;
+  background-color: white !important;
+}
+
+/* タスクフォームのヘッダー・フッター色をグローバルで強制 */
+.form-header {
+  background: #1976d2 !important;
+  color: #fff !important;
+}
+.form-header h2 {
+  color: #fff !important;
+}
+
+// スクロールバースタイルのグローバル設定
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f0f0f0;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cccccc;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #999999;
+}
+
+// カスタムフォームフィールドスタイル
+.mat-mdc-form-field {
+  &.mat-mdc-form-field.mat-mdc-form-field.mat-mdc-form-field.mat-mdc-form-field {
+    .mdc-text-field--outlined {
+      --mdc-outlined-text-field-container-shape: 8px;
+      background: rgb(250, 250, 250);
+    }
+  }
+}
+
+// カスタムボタンスタイル
+.mat-mdc-button, .mat-mdc-outlined-button {
+  &.selected {
+    background-color: rgb(63, 81, 181) !important;
+    color: white !important;
+    border-color: rgb(63, 81, 181) !important;
+  }
+}
+
+// カスタムカードスタイル
+.mat-mdc-card {
+  --mdc-elevated-card-container-shape: 12px;
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+// 入力フィールドのスタイル
+.mdc-text-field--outlined {
+  --mdc-outlined-text-field-container-shape: 4px;
+  --mdc-outlined-text-field-outline-color: rgba(0, 0, 0, 0.12);
+}
+
+.task-manager-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.task-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.task-card {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+  transition: transform 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+  }
+
+  .task-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+
+  .task-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #333;
+  }
+
+  .task-tag {
+    background: #e3f2fd;
+    color: #1976d2;
+    padding: 0.25rem 0.75rem;
+    border-radius: 16px;
+    font-size: 0.875rem;
+  }
+
+  .task-date {
+    color: #666;
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+  }
+
+  .task-time {
+    color: #666;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+  }
+}
+
+.add-task-button {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #1976d2;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease;
+  border: none;
+  cursor: pointer;
+
+  &:hover {
+    transform: scale(1.1);
+  }
+
+  svg {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+.task-tabs {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #e0e0e0;
+
+  .tab {
+    padding: 0.75rem 1.5rem;
+    color: #666;
+    cursor: pointer;
+    position: relative;
+    
+    &.active {
+      color: #1976d2;
+      font-weight: 500;
+      
+      &:after {
+        content: '';
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: #1976d2;
+      }
+    }
+  }
+}
+
+/* カスタムテーマ */
+.ngx-charts {
+  text {
+    fill: #333;
+  }
+  .grid-panel {
+    &.odd {
+      fill: rgba(0, 0, 0, 0.05);
+    }
+  }
+}
+
+/* スナックバースタイル */
+.success-snackbar {
+  background: #4caf50;
+  color: white;
+  
+  .mat-simple-snackbar-action {
+    color: white;
+    font-weight: bold;
+  }
+}
+
+.error-snackbar {
+  background: #f44336;
+  color: white;
+  
+  .mat-simple-snackbar-action {
+    color: white;
+    font-weight: bold;
+    text-transform: uppercase;
+  }
+}
+
+/* タイムピッカーやダイアログのオーバーレイ背景を半透明の黒に戻す */
+.cdk-overlay-backdrop, .cdk-overlay-backdrop.cdk-overlay-backdrop-showing {
+  background: transparent !important;
+  opacity: 1 !important;
+}
+
+/* タイムピッカー本体の白背景は維持 */
+.ngx-mat-timepicker-content, ::ng-deep .ngx-mat-timepicker-content {
+  background: #fff !important;
+  color: #222 !important;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.08) !important;
+}
+
+/* 時計の円盤部分だけ白背景＋影を付ける */
+::ng-deep .ngx-mat-timepicker-dial {
+  background: #fff !important;
+  border-radius: 50% !important;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.10) !important;
+}
+
+.cdk-overlay-backdrop,
+.mat-overlay-backdrop {
+  background: transparent !important;
+  opacity: 0 !important;
+}
+
+
+// ダイアログ・オーバーレイに関するすべてのカスタムCSSを完全に削除 

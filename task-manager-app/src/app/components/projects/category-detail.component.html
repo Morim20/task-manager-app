@@ -1,0 +1,21 @@
+<div class="category-detail-container">
+  <mat-card *ngIf="category">
+    <mat-card-header>
+      <mat-card-title>{{ category.name }}</mat-card-title>
+      <mat-card-subtitle>{{ category.description }}</mat-card-subtitle>
+    </mat-card-header>
+    
+    <mat-card-content>
+      <h3>このカテゴリーのタスク</h3>
+      <mat-list>
+        <mat-list-item *ngFor="let task of tasks">
+          <div class="task-item">
+            <span [class.completed]="task.completed">{{ task.title }}</span>
+            <span class="task-date">{{ task.dueDate | date:'yyyy/MM/dd' }}</span>
+            <span class="task-category-badge" *ngIf="task.categoryId">{{ getCategoryName(task.categoryId) }}</span>
+          </div>
+        </mat-list-item>
+      </mat-list>
+    </mat-card-content>
+  </mat-card>
+</div> 

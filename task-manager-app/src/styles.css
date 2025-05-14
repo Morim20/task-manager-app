@@ -1,1 +1,148 @@
-/* You can add global styles to this file, and also import other style files */
+/* グローバルスタイル。テーマ読み込み、フォント、リセット、ユーティリティクラスなど。*/
+
+/* 2. Roboto フォントを読み込む */
+@import url('https://fonts.googleapis.com/css?family=Roboto:300,400,500&display=swap');
+
+/* 3. ベースリセットとボディ設定 */
+* {
+  box-sizing: border-box;
+}
+html, body, app-root, main {
+  height: 100%;
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+}
+body {
+  font-family: 'Kosugi Maru', 'Yu Gothic', 'Meiryo', sans-serif;
+  background-color: #fff;
+  color: rgba(0, 0, 0, 0.87);
+}
+
+/* 4. ユーティリティクラス */
+.mt-2    { margin-top: 16px; }
+.full-width { width: 100%; }
+.spacer  { flex: 1 1 auto; }
+
+/* 5. マテリアルツールバーを常に上部に */
+.mat-mdc-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+/* 6. マテリアルボタンのスタイル */
+.mat-mdc-button {
+  margin: 8px;
+}
+
+/* 7. マテリアルテーブルのスタイル */
+.mat-mdc-table {
+  width: 100%;
+}
+
+/* 8. マテリアルカードのスタイル */
+.mat-mdc-card {
+  margin: 16px;
+}
+
+/* 9. フォームフィールドのスタイル */
+.mat-mdc-form-field {
+  width: 100%;
+}
+
+/* 10. コンテナのスタイル */
+.container {
+  padding: 16px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.firebase-emulator-warning {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  background: #ffffcc;
+  color: #a00;
+  border-top: 1px solid #a00;
+  margin: 0;
+  padding: 4px 0;
+  text-align: center;
+  z-index: 10000;
+  font-size: 14px;
+  height: auto;
+  min-height: unset;
+  max-height: 32px;
+  box-sizing: border-box;
+}
+
+/* タスク詳細ダイアログのスタイル */
+.task-detail-dialog {
+  /* オーバーレイの背景を濃くする */
+  .cdk-overlay-backdrop.cdk-overlay-backdrop-showing {
+    opacity: 0.85 !important;
+    background: #000;
+  }
+
+  /* ダイアログコンテナの背景を完全に透明に */
+  .mat-mdc-dialog-container, .mdc-dialog__surface {
+    background: none !important;
+    box-shadow: none !important;
+  }
+
+  .mat-mdc-dialog-title {
+    margin: 0;
+    padding: 0;
+    font-size: 1.5em;
+    color: #1976d2;
+  }
+
+  .mat-mdc-dialog-content {
+    margin: 20px 0;
+    padding: 0;
+  }
+
+  .task-info {
+    p {
+      line-height: 1.5;
+      margin: 12px 0;
+      strong {
+        color: #666;
+      }
+    }
+  }
+}
+
+/* カレンダーのタスクホバー効果 */
+.event:hover,
+.task-preview:hover {
+  cursor: pointer;
+  background-color: rgba(25, 118, 210, 0.1);
+  transition: background-color 0.2s ease;
+}
+
+.material-icons {
+  font-family: 'Material Icons';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  font-feature-settings: 'liga' 1;
+  -webkit-font-feature-settings: 'liga' 1;
+  -webkit-font-smoothing: antialiased;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Kosugi+Maru&display=swap');
+
+body, html {
+  font-family: 'Kosugi Maru', 'Yu Gothic', 'Meiryo', sans-serif;
+}
+
+    

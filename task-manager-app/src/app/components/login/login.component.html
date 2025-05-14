@@ -1,0 +1,58 @@
+<div class="login-container">
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>task_alt</mat-icon>
+        とうどぅまる
+      </mat-card-title>
+      <mat-card-subtitle>
+        {{ isSignUpMode ? 'アカウント作成' : 'ログイン' }}
+      </mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <form [formGroup]="loginForm">
+        <div class="full-width">
+          <mat-form-field appearance="outline">
+            <mat-label>メールアドレス</mat-label>
+            <input matInput type="email" formControlName="email" placeholder="example@email.com">
+            <mat-icon matPrefix>email</mat-icon>
+            <mat-error *ngIf="loginForm.get('email')?.hasError('required')">
+              メールアドレスは必須です
+            </mat-error>
+            <mat-error *ngIf="loginForm.get('email')?.hasError('email')">
+              有効なメールアドレスを入力してください
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="full-width">
+          <mat-form-field appearance="outline">
+            <mat-label>パスワード</mat-label>
+            <input matInput [type]="hidePassword ? 'password' : 'text'" formControlName="password">
+            <mat-icon matPrefix>lock</mat-icon>
+            <button mat-icon-button matSuffix (click)="hidePassword = !hidePassword" type="button">
+              <mat-icon>{{hidePassword ? 'visibility_off' : 'visibility'}}</mat-icon>
+            </button>
+            <mat-error *ngIf="loginForm.get('password')?.hasError('required')">
+              パスワードは必須です
+            </mat-error>
+            <mat-error *ngIf="loginForm.get('password')?.hasError('minlength')">
+              パスワードは6文字以上必要です
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="button-container">
+          <button mat-raised-button color="primary" (click)="onSubmit()" [disabled]="loginForm.invalid || isLoading">
+            <mat-spinner diameter="20" *ngIf="isLoading"></mat-spinner>
+            {{isLoading ? (isSignUpMode ? '作成中...' : 'ログイン中...') : (isSignUpMode ? 'アカウントを作成' : 'ログイン')}}
+          </button>
+          <button mat-stroked-button color="accent" type="button" (click)="toggleMode()">
+            {{isSignUpMode ? 'ログイン画面に戻る' : 'アカウントを新規作成'}}
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+</div>

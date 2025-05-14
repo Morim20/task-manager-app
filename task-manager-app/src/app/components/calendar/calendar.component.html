@@ -1,0 +1,131 @@
+<!-- カレンダー画面のHTML -->
+
+<!-- src/app/components/calendar/calendar.component.html -->
+<div class="calendar-container">
+  <mat-toolbar>
+    <button mat-icon-button (click)="prevMonth()">
+      <mat-icon>chevron_left</mat-icon>
+    </button>
+    <span>{{ monthTitle }}</span>
+    <button mat-icon-button (click)="nextMonth()">
+      <mat-icon>chevron_right</mat-icon>
+    </button>
+    <button mat-button (click)="goToday()">今日</button>
+    <button mat-button (click)="toggleWeekView()">
+      {{ isWeekView ? '月表示' : '週表示' }}
+    </button>
+  </mat-toolbar>
+
+  <!-- 週表示 -->
+  <div *ngIf="isWeekView" class="week-view">
+    <!-- ヘッダー部分 -->
+    <div class="week-header">
+      <div class="time-column-header"></div>
+      <div *ngFor="let day of weekDays" class="day-column-header" [class.today]="isToday(day)">
+        <div class="day-name">{{ day }}</div>
+        <div class="date">{{ getDateForDay(day) | date:'M/d' }}</div>
+      </div>
+    </div>
+
+    <!-- 本体部分 -->
+    <div class="week-body">
+      <!-- 時間列 -->
+      <div class="time-column">
+        <div *ngFor="let hour of [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23]" class="time-slot-header">
+          {{ hour }}:00
+        </div>
+        <div class="current-time-line" [style.top.px]="currentTimePosition">
+          <div class="current-time-label">{{currentTimeLabel}}</div>
+          <div class="current-time-dot"></div>
+        </div>
+      </div>
+
+      <!-- 日付列 -->
+      <div class="day-columns">
+        <div *ngFor="let day of weekDays" 
+             class="day-column" 
+             [class.today]="isToday(day)">
+          <!-- 時間グリッド -->
+          <div class="time-grid">
+            <div class="time-grid-column">
+              <div *ngFor="let hour of [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23]" 
+                   class="time-grid-cell">
+              </div>
+            </div>
+          </div>
+
+          <!-- 終日タスク表示エリア -->
+          <div class="all-day-container">
+            <ng-container *ngFor="let block of getTaskBlocksForDay(getDayData(day))">
+              <div *ngIf="block.isAllDay"
+                   class="event"
+                   [class.no-task]="block.isNoTask"
+                   [class.target-completion]="block.isTargetCompletion"
+                   [style.top.px]="block.topPosition"
+                   [style.height.px]="block.heightInPixels"
+                   (click)="openTaskDetail(block.task, getDayData(day).date); $event.stopPropagation()">
+                <div class="event-title">{{ block.task.title }}</div>
+              </div>
+            </ng-container>
+          </div>
+          <!-- 時間指定タスク表示エリア -->
+          <div class="events-container">
+            <ng-container *ngFor="let block of getTaskBlocksForDay(getDayData(day))">
+              <div *ngIf="!block.isAllDay && block.task"
+                   class="event"
+                   [class.no-task]="block.isNoTask"
+                   [class.all-day]="block.isAllDay"
+                   [class.cross-day]="block.isCrossDay"
+                   [class.overlap]="block.isOverlap"
+                   [class.target-completion]="block.isTargetCompletion"
+                   [style.top.px]="block.topPosition"
+                   [style.height.px]="block.heightInPixels"
+                   [style.zIndex]="1000 - (block.heightInPixels ?? 0)"
+                   (click)="openTaskDetail(block.task, getDayData(day).date); $event.stopPropagation()">
+                <div class="event-title">{{ block.task.title }}</div>
+                <div class="event-time" *ngIf="!block.isAllDay">
+                  {{ block.task.startTime }} - {{ block.task.endTime }}
+                </div>
+              </div>
+            </ng-container>
+          </div>
+          <div class="current-time-line" [style.top.px]="currentTimePosition"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 月表示 -->
+  <div *ngIf="!isWeekView" class="month-grid">
+    <div class="month-header">
+      <div class="weekday-cell" *ngFor="let w of ['日','月','火','水','木','金','土']">{{ w }}</div>
+    </div>
+    <div class="month-grid">
+      <div class="month-row" *ngFor="let week of monthGrid">
+        <div class="day-cell" 
+             *ngFor="let day of week" 
+             [class.today]="day.isToday"
+             [ngClass]="{'cap-over': isCapacityOver(day)}"
+             [matTooltip]="isCapacityOver(day) ? 'キャパオーバー' : ''"
+             [matTooltipDisabled]="!isCapacityOver(day)">
+          <div class="day-number">{{ day.date.getDate() }}</div>
+          <div class="tasks-preview">
+            <div *ngFor="let t of day.tasks | slice:0:3" 
+                 class="task-preview" 
+                 (click)="openTaskDetail(t, day.date); $event.stopPropagation()">
+              <span class="dot" [class.no-task]="t.noTask"></span>
+              <span class="task-title">{{ t.title }}</span>
+            </div>
+            <div *ngIf="day.tasks.length > 3" 
+                 class="more-tasks" 
+                 (click)="openTasksDialog(day.date, day.tasks); $event.stopPropagation()"
+                 [matTooltip]="'クリックで全タスクを表示'"
+                 matTooltipPosition="above">
+              他{{ day.tasks.length - 3 }}件
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

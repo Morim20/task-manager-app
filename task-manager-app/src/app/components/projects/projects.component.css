@@ -1,0 +1,12 @@
+/* src/app/components/projects/projects.component.scss */
+.add {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  mat-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  

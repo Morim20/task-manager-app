@@ -1,0 +1,33 @@
+/* タスク一覧画面のCSS */
+
+.spacer { flex: 1 1 auto; }
+.mt-2   { margin-top: 16px; }
+.item-content { flex: 1; }
+.empty { text-align: center; color: #777; padding: 16px; }
+
+.mat-mdc-raised-button {
+    margin: 8px;
+  }
+
+  .mat-mdc-table {
+    width: 100%;
+  }
+
+  .mat-mdc-calendar {
+    width: 100%;
+  }
+
+  .mat-mdc-calendar-body-cell-content {
+    font-size: 14px;
+  }
+
+  .mat-mdc-calendar-body-cell-content {
+    font-size: 14px;
+  }
+
+/* src/app/components/task-list/task-list.component.scss */
+.add-fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+}

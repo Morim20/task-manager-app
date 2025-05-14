@@ -1,0 +1,54 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ユーザー自身のデータのみアクセス可能
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      // タスク
+      match /tasks/{taskId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      
+      // カテゴリー
+      match /categories/{categoryId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+        // ステータス（カテゴリーごと）
+        match /statuses/{statusId} {
+          allow read, write: if request.auth != null && request.auth.uid == userId;
+        }
+      }
+      
+      // ラベル
+      match /labels/{labelId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // ステータス
+      match /statuses/{statusId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // プロジェクト
+      match /projects/{projectId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // プロフィール設定（キャパシティ等）
+      match /profile {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // キャパシティ
+      match /capacity/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // 共通設定など、全ユーザーがアクセス可能なデータ
+    match /settings/{document=**} {
+      allow read: if request.auth != null;
+      allow write: if false;  // 管理者のみ書き込み可能（別途管理者用ルールを設定）
+    }
+  }
+} 

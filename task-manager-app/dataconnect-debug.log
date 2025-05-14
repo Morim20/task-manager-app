@@ -1,0 +1,12 @@
+I0427 20:40:49.636552    9992 load.go:37] Reloading schema and connectors...
+I0427 20:40:49.676887    9992 control.go:71] [/emulator/task-manager-app ef35] UpdateResources(): done
+Schema: sources: schema\schema.gql [2088B] 
+Connector "default": sources: connector\mutations.gql [1233B] connector\queries.gql [1802B] 
+I0427 20:40:49.695539    9992 collector.go:107] schema extensions wrote into "C:\\Users\\mizuk\\task-manager\\task-manager-app\\dataconnect\\.dataconnect\\schema"
+Generated sources: prelude.gql [69396B] 
+I0427 20:40:49.695539    9992 load.go:115] Finished reloading
+I0427 20:40:49.695539    9992 dev.go:95] Listening on address (HTTP + gRPC): 127.0.0.1:9399
+I0427 20:40:49.695539    9992 dev.go:95] Listening on address (HTTP + gRPC): [::1]:9399
+I0427 20:40:54.277080    9992 control.go:71] [/emulator/task-manager-app ae33] UpdateResources(): done
+Schema: sources: schema\schema.gql [2088B] 
+Connector "default": sources: connector\mutations.gql [1233B] connector\queries.gql [1802B] 

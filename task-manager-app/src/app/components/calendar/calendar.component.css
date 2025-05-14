@@ -1,0 +1,892 @@
+/* カレンダー画面のCSS */
+
+.calendar-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    width: 100vw;
+    background: #f5f5f5;
+    box-sizing: border-box;
+    padding: 16px;
+    overflow: hidden;
+}
+
+mat-card {
+    width: 100%;
+    max-width: 800px;
+    min-width: 360px;
+    min-height: 60vh;
+    padding: 16px 8px 24px 8px;
+    box-sizing: border-box;
+    margin: 8px auto 0 auto;
+    position: relative;
+}
+
+.mat-mdc-raised-button {
+    margin: 8px;
+  }
+
+  .mat-mdc-table {
+    width: 100%;
+  }
+
+  .mat-mdc-calendar {
+    width: 100%;
+    min-width: 700px;
+    min-height: 600px;
+    font-size: 1.3rem;
+  }
+
+  .mat-mdc-calendar-body-cell-content {
+    font-size: 20px;
+  }
+
+/* 月表示のグリッド */
+.month-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 6px 0 0 0;
+    height: 775px; /* 1550pxの半分に設定 */
+    width: 840px; /* 7列 × 120px */
+    margin: auto;
+}
+
+.month-header {
+    display: grid;
+    grid-template-columns: repeat(7, 120px);
+    text-align: center;
+    background-color: #f5f5f5;
+    padding: 8px 0;
+    border: 1px solid #e0e0e0;
+    width: 840px; /* 7列 × 120px */
+}
+
+.weekday-cell {
+    text-align: center;
+    font-weight: bold;
+    color: #1976d2;
+    font-size: 0.95rem;
+    padding-bottom: 2px;
+}
+
+.month-row {
+    display: grid;
+    grid-template-columns: repeat(7, 120px);
+    border-bottom: 1px solid #e0e0e0;
+    height: calc((775px - 50px) / 6); /* 全体の高さから header を引いて6週で割る */
+    width: 840px; /* 7列 × 120px */
+}
+
+.day-cell {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 8px;
+    box-sizing: border-box;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%; /* 親要素の高さいっぱいに */
+    overflow: hidden; /* はみ出し防止 */
+}
+
+.day-cell.today {
+    border: 2px solid #1976d2;
+    background: #e3f2fd;
+}
+
+.day-cell.cap-over {
+    background: #fffde7 !important;
+    border: 2px solid #ffd600 !important;
+}
+
+.day-number {
+    font-weight: bold;
+    margin-bottom: 4px;
+    flex-shrink: 0; /* 日付は縮まないように */
+    height: 20px; /* 日付の高さを固定 */
+    line-height: 20px;
+}
+
+.tasks-preview {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    overflow-y: auto; /* 縦方向のスクロールを有効化 */
+    margin-top: 4px;
+    padding-right: 4px; /* スクロールバー分の余白 */
+    max-height: calc(100% - 30px); /* 日付表示分を引いた高さ */
+}
+
+/* スクロールバーのスタイル */
+.tasks-preview::-webkit-scrollbar {
+    width: 4px;
+}
+
+.tasks-preview::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 2px;
+}
+
+.tasks-preview::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 2px;
+}
+
+.tasks-preview::-webkit-scrollbar-thumb:hover {
+    background: #999;
+}
+
+.task-preview {
+    font-size: 0.75rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 1px 0;
+    min-height: 16px;
+}
+
+.dot {
+    display: inline-block;
+    width: 4px;
+    height: 4px;
+    background: #ff7043;
+    border-radius: 50%;
+    margin-right: 2px;
+    flex-shrink: 0;
+}
+
+.more-tasks {
+    font-size: 0.7rem;
+    color: #888;
+    margin-top: 1px;
+    padding: 1px 0;
+}
+
+/* 週表示のスタイル */
+.week-view {
+    display: flex;
+    flex-direction: column;
+    height: 1550px;
+    border: 1px solid #e0e0e0;
+    background-color: #ffffff;
+    overflow: hidden;
+    margin: auto;
+}
+
+/* ヘッダー部分 */
+.week-header {
+    display: flex;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e0e0e0;
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    min-width: fit-content;
+    width: 100%;
+    height: 50px; /* ヘッダーの高さを固定 */
+}
+
+.time-column-header {
+    width: 40px;
+    flex-shrink: 0;
+    border-right: 1px solid #e0e0e0;
+    background-color: #f8f9fa;
+    position: sticky;
+    left: 0;
+    z-index: 2;
+}
+
+.day-column-header {
+    width: 100px;
+    flex: 1;
+    padding: 8px 4px;
+    text-align: center;
+    border-right: 1px solid #e0e0e0;
+    height: 50px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 100px;
+    box-sizing: border-box;
+}
+
+.day-name {
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.date {
+    color: #666;
+    font-size: 0.9em;
+}
+
+/* 本体部分 */
+.week-body {
+    display: flex;
+    flex: 1;
+    position: relative;
+    min-width: fit-content;
+    width: 100%;
+    height: calc(24 * 60px); /* 24時間分の固定高さ */
+    overflow: visible; /* スクロールを無効化 */
+}
+
+/* 時間列 */
+.time-column {
+    width: 50px;
+    flex-shrink: 0;
+    border-right: 1px solid #e0e0e0;
+    background: #f8f9fa;
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    height: calc(24 * 60px); /* 24時間分の高さを固定 */
+}
+
+.time-slot-header {
+    height: 60px; /* 1時間あたりの高さを60pxに固定 */
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+    padding: 4px 8px;
+    box-sizing: border-box;
+    font-size: 0.75rem;
+    color: #666;
+}
+
+/* 日付列 */
+.day-columns {
+    display: flex;
+    flex: 1;
+    position: relative;
+    height: calc(24 * 60px); /* 24時間分の高さを固定 */
+}
+
+.day-column {
+    width: 120px;
+    flex: 1;
+    position: relative;
+    border-right: 1px solid #e0e0e0;
+    min-width: 120px;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+.day-column:last-child {
+    border-right: none;
+}
+
+/* 時間グリッド */
+.time-grid {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: calc(24 * 60px); /* 24時間分の高さを固定 */
+    pointer-events: none;
+    z-index: 0;
+}
+
+.time-grid-column {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.time-grid-cell {
+    height: 60px; /* 1時間あたりの高さを60pxに固定 */
+    border-bottom: 1px solid #e0e0e0;
+    position: relative;
+    box-sizing: border-box;
+}
+
+/* 1時間ごとの実線 */
+.time-grid-cell {
+    border-bottom: 1px solid #e0e0e0;
+}
+
+/* 30分ごとの点線 */
+.time-grid-cell::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    border-bottom: 1px dashed #e0e0e0;
+}
+
+/* 6時間ごとの太線 */
+.time-grid-cell:nth-child(6n) {
+    border-bottom: 2px solid #bbb;
+}
+
+/* イベントコンテナ */
+.events-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: calc(24 * 60px); /* 24時間分の高さを固定 */
+    pointer-events: none;
+    z-index: 1;
+    overflow: visible;
+    transform: translateY(0); /* 位置の基準点を設定 */
+}
+
+.events-container > * {
+    pointer-events: auto;
+}
+
+/* イベント */
+.event {
+    position: absolute;
+    left: 4px;
+    right: 4px;
+    background: #ffb74d;
+    color: white;
+    border-radius: 4px;
+    padding: 2px 4px;
+    font-size: 0.8rem;
+    overflow: visible;
+    pointer-events: auto;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    z-index: 1;
+    min-height: 20px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 0;
+    transform: translateY(0);
+}
+
+/* 繰り返しタスクのスタイル */
+.event[title*="(繰り返し)"] {
+    background: rgba(255, 112, 67, 0.25);
+    border: 2px dashed rgba(255, 112, 67, 0.6);
+    color: rgba(0, 0, 0, 0.85);
+    box-shadow: inset 0 0 8px rgba(250, 113, 72, 0.1);
+}
+
+.event[title*="(繰り返し)"].no-task {
+    background: rgba(144, 164, 174, 0.25);
+    border: 2px dashed rgba(144, 164, 174, 0.6);
+    color: rgba(0, 0, 0, 0.85);
+    box-shadow: inset 0 0 8px rgba(144, 164, 174, 0.1);
+}
+
+.event[title*="(繰り返し)"].all-day {
+    background: rgba(121, 134, 203, 0.25);
+    border: 2px dashed rgba(121, 134, 203, 0.6);
+    color: rgba(0, 0, 0, 0.85);
+    box-shadow: inset 0 0 8px rgba(121, 134, 203, 0.1);
+}
+
+.event[title*="(繰り返し)"].cross-day {
+    background: rgba(255, 112, 67, 0.25);
+    border-left: 4px dashed rgba(230, 74, 25, 0.6);
+    color: rgba(0, 0, 0, 0.85);
+    box-shadow: inset 0 0 8px rgba(255, 112, 67, 0.1);
+}
+
+.event[title*="(繰り返し)"]:hover {
+    background: rgba(255, 112, 67, 0.4);
+    border-style: solid;
+    color: rgba(0, 0, 0, 0.95);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15), inset 0 0 12px rgba(255, 112, 67, 0.2);
+}
+
+.event[title*="(繰り返し)"].no-task:hover {
+    background: rgba(144, 164, 174, 0.4);
+    border-style: solid;
+    color: rgba(0, 0, 0, 0.95);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15), inset 0 0 12px rgba(144, 164, 174, 0.2);
+}
+
+.event[title*="(繰り返し)"].all-day:hover {
+    background: rgba(121, 134, 203, 0.4);
+    border-style: solid;
+    color: rgba(0, 0, 0, 0.95);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15), inset 0 0 12px rgba(121, 134, 203, 0.2);
+}
+
+.event[title*="(繰り返し)"].cross-day:hover {
+    background: rgba(255, 112, 67, 0.4);
+    border-left: 4px solid rgba(230, 74, 25, 0.6);
+    color: rgba(0, 0, 0, 0.95);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15), inset 0 0 12px rgba(255, 112, 67, 0.2);
+}
+
+/* 繰り返しタスクのアイコンとタイトルのスタイル */
+.event[title*="(繰り返し)"]::after {
+    content: '🔄';
+    position: absolute;
+    right: 4px;
+    top: 4px;
+    font-size: 12px;
+    opacity: 0.8;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.event[title*="(繰り返し)"] .event-title {
+    font-weight: 500;
+    padding-right: 20px;
+}
+
+.event[title*="(繰り返し)"] .event-time {
+    opacity: 0.8;
+    font-weight: 500;
+}
+
+/* 繰り返しタスクのグラデーション効果 */
+.event[title*="(繰り返し)"]::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, 
+        transparent, 
+        rgba(255, 255, 255, 0.15) 30%, 
+        rgba(255, 255, 255, 0.25) 50%, 
+        rgba(255, 255, 255, 0.15) 70%, 
+        transparent);
+    pointer-events: none;
+    animation: gradientShift 3s ease infinite;
+}
+
+@keyframes gradientShift {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+/* 短いタスクバーのスタイル */
+.event:not(.all-day)[style*="height: 30px"],
+.event:not(.all-day)[style*="height: 2"],
+.event:not(.all-day)[style*="height:30px"],
+.event:not(.all-day)[style*="height:2"] {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    padding: 1px 3px;
+    min-height: 18px;
+    gap: 2px;
+}
+
+.event-title {
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.7rem;
+    line-height: 1.1;
+    flex: 1;
+    min-width: 0;
+    padding: 0;
+}
+
+.event-time {
+    font-size: 0.65rem;
+    opacity: 0.9;
+    white-space: nowrap;
+    line-height: 1.1;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* 短いタスクバーの時間表示 */
+.event:not(.all-day)[style*="height: 30px"] .event-time,
+.event:not(.all-day)[style*="height: 2"] .event-time,
+.event:not(.all-day)[style*="height:30px"] .event-time,
+.event:not(.all-day)[style*="height:2"] .event-time {
+    font-size: 0.55rem;
+    padding: 0;
+    margin: 0;
+    white-space: nowrap;
+    line-height: 1;
+    color: rgba(255, 255, 255, 0.95);
+}
+
+/* 短いタスクバーのタイトル */
+.event:not(.all-day)[style*="height: 30px"] .event-title,
+.event:not(.all-day)[style*="height: 2"] .event-title,
+.event:not(.all-day)[style*="height:30px"] .event-title,
+.event:not(.all-day)[style*="height:2"] .event-title {
+    font-size: 0.6rem;
+    padding: 0;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1;
+}
+
+.event.all-day {
+    background: #7986cb;
+    border-left: 4px solid #3f51b5;
+    height: 24px !important;
+    top: 0 !important;
+    z-index: 2;
+    flex-direction: row;
+    align-items: center;
+}
+
+.event.no-task {
+    background: #8bc34a !important;   /* 濃いめの黄緑 */
+    color: #2e4a0f !important;
+    border: 1px solid #689f38 !important;
+}
+
+.event.no-task.overlap {
+    background: #c5e1a5 !important;   /* 明るめの黄緑 */
+    border: 2px solid #aed581 !important;
+    color: #33691e !important;
+}
+
+.event.cross-day {
+    background: #ff7043;
+    border-left: 4px solid #e64a19;
+    position: relative;
+}
+
+/* 開始日のタスク */
+.event.cross-day[title*="(1/2)"] {
+    border-bottom: none;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    position: relative;
+}
+
+.event.cross-day[title*="(1/2)"]::after {
+    content: '▼';
+    position: absolute;
+    bottom: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #e64a19;
+    font-size: 12px;
+    text-shadow: 0 2px 2px rgba(0,0,0,0.1);
+}
+
+/* 終了日のタスク */
+.event.cross-day[title*="(2/2)"] {
+    border-top: none;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    position: relative;
+}
+
+.event.cross-day[title*="(2/2)"]::before {
+    content: '▲';
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #e64a19;
+    font-size: 12px;
+    text-shadow: 0 2px 2px rgba(0,0,0,0.1);
+}
+
+/* 時間指定タスクのコンテナ */
+.timed-events-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100%;
+    pointer-events: none;
+}
+
+/* 終日タスク用のコンテナ */
+.all-day-container {
+    position: relative;
+    min-height: 24px;
+    height: auto;
+    overflow: visible;
+    margin-bottom: 2px;
+    z-index: 3;
+}
+
+/* 今日の列 */
+.today {
+    background-color: #e8f0fe;
+}
+
+/* スクロールバーのスタイル */
+.week-body::-webkit-scrollbar {
+    width: 12px; /* スクロールバーを少し太めに */
+}
+
+.week-body::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-left: 1px solid #e0e0e0;
+}
+
+.week-body::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 6px;
+    border: 3px solid #f1f1f1;
+}
+
+.week-body::-webkit-scrollbar-thumb:hover {
+    background: #666;
+}
+
+/* 時間表示の調整 */
+.time-column {
+    width: 40px;
+    border-right: 1px solid #e0e0e0;
+    background: #f8f9fa;
+    position: sticky;
+    left: 0;
+    z-index: 2;
+}
+
+/* 時間表示用のスタイル */
+.time-label {
+    position: relative;
+    height: 60px; /* 1時間あたりの高さを60pxに統一 */
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+    padding: 4px 12px;
+    box-sizing: border-box;
+    color: #333;
+    font-size: 0.9em;
+    font-weight: 500;
+}
+
+/* カレンダーグリッドのベース設定 */
+.calendar-grid {
+  display: grid;
+  grid-template-columns: 40px repeat(7, 120px);
+  gap: 1px;
+  background-color: #e0e0e0;
+  border: 1px solid #e0e0e0;
+  position: relative;
+    height: calc(24 * 60px + 40px);
+  width: fit-content;
+  min-width: 880px;
+    overflow: visible;
+}
+
+/* 時間グリッドセル */
+.time-cell {
+  height: 60px; /* PIXELS_PER_HOUR と同じ */
+  background-color: white;
+  border-bottom: 1px solid #e0e0e0;
+  position: relative;
+  width: 120px;
+}
+
+/* タスク表示用のオーバーレイ */
+.day-overlay {
+  position: absolute;
+  top: 40px; /* HEADER_HEIGHT - JSでの加算は不要 */
+  bottom: 0;
+  width: 120px;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.day-overlay > * {
+  pointer-events: auto;
+}
+
+.task-block {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  padding: 6px;
+  border-radius: 6px;
+  font-size: 0.95em;
+  overflow: hidden;
+  z-index: 1;
+  transition: all 0.2s ease;
+  width: calc(100% - 8px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-sizing: border-box;
+  margin: 0;
+  min-height: 20px;
+}
+
+.task-block:hover {
+  z-index: 2;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  transform: translateY(-1px);
+}
+
+.task-block.regular-task {
+  background-color: #ff7043;
+  color: white;
+}
+
+.task-block.no-task {
+  background-color: #90a4ae;
+  color: white;
+  opacity: 0.7;
+}
+
+.task-block.all-day {
+  background-color: #81c784;
+  top: 0 !important;
+  height: 24px !important;
+}
+
+.task-time {
+  font-size: 0.85em;
+  opacity: 0.9;
+  margin-top: 4px;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.date {
+  font-size: 0.8em;
+  color: #666;
+  margin-top: 2px;
+  }
+
+/* 長いタスクバーのスタイル */
+.event:not([style*="height: 30px"]):not([style*="height: 2"]):not([style*="height:30px"]):not([style*="height:2"]) {
+    display: block;
+    position: absolute;
+    left: 4px;
+    right: 4px;
+    padding: 4px;
+}
+
+.event:not([style*="height: 30px"]):not([style*="height: 2"]):not([style*="height:30px"]):not([style*="height:2"]) .event-title {
+    display: block;
+    margin: 0;
+    padding: 0;
+    line-height: 1.2;
+    font-size: 0.7rem;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.event:not([style*="height: 30px"]):not([style*="height: 2"]):not([style*="height:30px"]):not([style*="height:2"]) .event-time {
+    display: block;
+    font-size: 0.65rem;
+    opacity: 0.95;
+    white-space: nowrap;
+    line-height: 1.1;
+    color: rgba(255, 255, 255, 0.95);
+    margin: 1px 0 0 0;
+}
+
+.task-block.cross-day {
+  position: relative;
+  border-bottom: 2px solid rgba(0, 0, 0, 0.2);
+}
+
+.task-block.cross-day::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+.task-block.cross-day:first-child {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.task-block.cross-day:last-child {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+/* 現在時刻を示すライン */
+.current-time-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: #2196F3; /* Material Blue 500 */
+    z-index: 3;
+    pointer-events: none;
+    box-shadow: 0 1px 2px rgba(33, 150, 243, 0.3);
+}
+
+.current-time-label {
+    position: absolute;
+    left: 0;
+    transform: translateY(-50%);
+    background-color: #2196F3; /* Material Blue 500 */
+    color: white;
+    padding: 2px 4px;
+    border-radius: 2px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    z-index: 3;
+    pointer-events: none;
+    width: 40px;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* 現在時刻のドット */
+.current-time-dot {
+    position: absolute;
+    right: -4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 8px;
+    height: 8px;
+    background-color: #2196F3; /* Material Blue 500 */
+    border-radius: 50%;
+    box-shadow: 0 0 0 2px white, 0 1px 2px rgba(33, 150, 243, 0.3);
+}
+
+mat-toolbar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  background: transparent;
+  box-shadow: none;
+}
+
+mat-toolbar button, mat-toolbar span {
+  margin: 0 4px;
+}
+
+.event.overlap {
+  background: #ffe29a !important; /* 柔らかい黄色寄りのオレンジ */
+  border: 2px solid #ffd166 !important;
+  color: #a15c00 !important;
+  z-index: 2;
+}
+
+.event.target-completion {
+  background: #42a5f5 !important; /* 明るい青 */
+  border: 2px solid #1976d2 !important;
+  color: #fff !important;
+  z-index: 3;
+}
