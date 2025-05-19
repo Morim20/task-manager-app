@@ -1390,7 +1390,6 @@ export class CalendarComponent implements OnInit, OnDestroy {
     });
   }
 
-  // 指定日のキャパオーバー判定（ユーザー設定値と連動）
   isCapacityOver(day: { date: Date, tasks: Task[] }): boolean {
     // ユーザー設定が未保存の場合はキャパオーバー判定しない
     if (!this.userSettings || this.userSettings.capacity == null) {

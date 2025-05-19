@@ -429,9 +429,33 @@ export class TodayTodoComponent implements OnInit, AfterViewInit, OnDestroy {
       date.setHours(0, 0, 0, 0);
       return date.getTime() === today.getTime();
     });
-    // 並び順: 終日タスクを一番上、その後に時間指定タスクを時系列順
-    const allDayTasks = filtered.filter(t => !t.startTime && !t.dueTime);
-    const timedTasks = filtered.filter(t => t.startTime || t.dueTime);
+
+    // --- 前日から日またぎで本日にまたがるタスクも追加 ---
+    const prevDate = new Date(today);
+    prevDate.setDate(today.getDate() - 1);
+    prevDate.setHours(0, 0, 0, 0);
+    const crossDayTasks = this.allTasks.filter(task => {
+      if (!task.startTime || !task.endTime || !task.dueDate) return false;
+      const startTimeStr = task.startTime;
+      const endTimeStr = task.endTime;
+      if (!startTimeStr || !endTimeStr) return false;
+      const startTime = this.parseTime(startTimeStr);
+      const endTime = this.parseTime(endTimeStr);
+      if (startTime.hour === null || endTime.hour === null) return false;
+      // 日またぎ
+      const isCrossDay = startTime.hour > endTime.hour || (startTime.hour === endTime.hour && startTime.minutes > endTime.minutes);
+      const dueDate = new Date(task.dueDate);
+      dueDate.setHours(0, 0, 0, 0);
+      return isCrossDay && dueDate.getTime() === prevDate.getTime();
+    });
+    // 重複しないようにIDで除外
+    const filteredIds = new Set(filtered.map(t => t.id));
+    const crossDayOnly = crossDayTasks.filter(t => !filteredIds.has(t.id));
+    const allTodayTasks = [...filtered, ...crossDayOnly];
+
+    // 並び順: 終日タスク → 前日から日またぎタスク → 通常の時間指定タスク
+    const allDayTasks = allTodayTasks.filter(t => !t.startTime && !t.dueTime);
+    const timedTasks = allTodayTasks.filter(t => t.startTime || t.dueTime);
     timedTasks.sort((a, b) => {
       // startTime優先、なければdueTime、なければcreatedAt
       const getMinutes = (t: Task) => {
@@ -449,7 +473,7 @@ export class TodayTodoComponent implements OnInit, AfterViewInit, OnDestroy {
       };
       return getMinutes(a) - getMinutes(b);
     });
-    return [...allDayTasks, ...timedTasks];
+    return [...allDayTasks, ...crossDayOnly, ...timedTasks.filter(t => !crossDayOnly.includes(t))];
   }
 
   parseTime(timeStr: string): { hour: number | null, minutes: number } {
@@ -476,6 +500,45 @@ export class TodayTodoComponent implements OnInit, AfterViewInit, OnDestroy {
     const dayData = { date: today, tasks: this.todayTasks, isToday: true };
     const blocks: any[] = [];
     const processedTaskIds = new Set<string>();
+
+    // --- 前日から日またぎで本日にまたがるタスクを検出しバーを追加 ---
+    const prevDate = new Date(today);
+    prevDate.setDate(today.getDate() - 1);
+    prevDate.setHours(0, 0, 0, 0);
+    const crossDayTasks = this.allTasks.filter(task => {
+      if (!task.startTime || !task.endTime || !task.dueDate) return false;
+      const startTimeStr = task.startTime;
+      const endTimeStr = task.endTime;
+      if (!startTimeStr || !endTimeStr) return false;
+      const startTime = this.parseTime(startTimeStr);
+      const endTime = this.parseTime(endTimeStr);
+      if (startTime.hour === null || endTime.hour === null) return false;
+      // 日またぎ
+      const isCrossDay = startTime.hour > endTime.hour || (startTime.hour === endTime.hour && startTime.minutes > endTime.minutes);
+      const dueDate = new Date(task.dueDate);
+      dueDate.setHours(0, 0, 0, 0);
+      return isCrossDay && dueDate.getTime() === prevDate.getTime();
+    });
+    crossDayTasks.forEach(task => {
+      if (!task.endTime) return;
+      const endTime = this.parseTime(task.endTime);
+      if (endTime.hour === null) return;
+      const taskEndMinutes = endTime.hour * 60 + endTime.minutes;
+      if (taskEndMinutes > 0) {
+        blocks.push({
+          task: { ...task },
+          duration: taskEndMinutes / 60,
+          startOffset: 0,
+          topPosition: 0,
+          heightInPixels: taskEndMinutes * this.PIXELS_PER_MINUTE,
+          isNoTask: task.noTask || false,
+          isAllDay: false,
+          isCrossDay: true
+        });
+      }
+      processedTaskIds.add(task.id + '_crossday');
+    });
+
     // 終日タスク
     const allDayTasks = dayData.tasks.filter(task =>
       (!task.startTime || task.startTime.trim() === '') &&
@@ -643,7 +706,8 @@ export class TodayTodoComponent implements OnInit, AfterViewInit, OnDestroy {
         const [sh, sm] = task.startTime.split(':').map(Number);
         const [eh, em] = task.endTime.split(':').map(Number);
         total += (eh * 60 + em) - (sh * 60 + sm);
-      } else if (task.dueTime) {
+      } else if (task.dueTime && (task.startTime || task.endTime)) {
+        // dueTimeのみのタスクはカウントしない
         total += 30;
       }
     });
@@ -785,7 +849,6 @@ export class TodayTodoComponent implements OnInit, AfterViewInit, OnDestroy {
     // 1分単位で重複を除外
     const minutes = new Array(1440).fill(false);
     for (const block of this.todayTaskBlocks) {
-      console.log('block:', block, 'isNoTask:', block.isNoTask, 'isAllDay:', block.isAllDay, 'startTime:', block.task.startTime, 'endTime:', block.task.endTime, 'dueTime:', block.task.dueTime);
       if (
         block.isNoTask ||
         block.isAllDay ||
@@ -800,31 +863,24 @@ export class TodayTodoComponent implements OnInit, AfterViewInit, OnDestroy {
         if (startTime.hour === null || endTime.hour === null) continue;
         start = startTime.hour * 60 + startTime.minutes;
         end = endTime.hour * 60 + endTime.minutes;
-        // 日をまたぐ場合は本日分のみ（24:00まで）
         if (end <= start) end = 1440;
-      } else if (block.task.dueTime) {
-        // TODO（時間指定なしタスク）は除外
-        if (!block.task.startTime && !block.task.endTime) {
-          continue;
-        }
+      } else if (block.task.dueTime && (block.task.startTime || block.task.endTime)) {
+        // dueTimeのみのタスクは除外
         const dueTime = this.parseTime(block.task.dueTime);
         if (dueTime.hour === null) continue;
         start = dueTime.hour * 60 + dueTime.minutes;
-        end = start + 30; // 30分枠
+        end = start + 30;
       } else {
         continue;
       }
-      // 範囲外防止
       start = Math.max(0, Math.min(1439, start));
       end = Math.max(0, Math.min(1440, end));
-      console.log('  → start:', start, 'end:', end, 'duration:', end - start);
       for (let i = start; i < end; i++) {
         minutes[i] = true;
       }
     }
     this.usedCapacity = minutes.filter(Boolean).length;
     this.remainingCapacity = Math.max(this.userCapacity - this.usedCapacity, 0);
-    // キャパ超過判定
     this.overCapacity = this.usedCapacity > this.userCapacity;
     this.overCapacityMessage = this.overCapacity ? 'よく頑張ってるね！働きすぎ注意！' : '';
     console.log('usedCapacity:', this.usedCapacity, 'userCapacity:', this.userCapacity, 'remainingCapacity:', this.remainingCapacity);
