@@ -19,12 +19,11 @@
     left: 0;
     right: 0;
     padding: 36px 0 28px 0;
-    box-shadow: 0 2px 4px rgba(25, 118, 210, 0.08);
     z-index: 100;
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 96px;
+    min-height: 100px;
 
     h2 {
       margin: 0;
@@ -35,7 +34,7 @@
       letter-spacing: 0.05em;
       text-align: center;
       width: 100%;
-      padding-left: 1em;
+      padding-left: 1rem;
       padding-top: 1em;
     }
   }
@@ -48,61 +47,7 @@
     margin: 0 auto;
     width: 100%;
     box-sizing: border-box;
-    height: calc(100vh - 120px); // ヘッダーとフッターの高さを考慮
-
-    h2 {
-      margin-bottom: 20px;
-    }
-
-    .form-section {
-      margin-bottom: 24px;
-
-      h3 {
-        margin-bottom: 12px;
-      }
-    }
-
-    .full-width {
-      width: 100%;
-    }
-
-    .link-item {
-      margin-bottom: 12px;
-    }
-
-    .label-container {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 12px;
-
-      .label-button {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-
-        &.selected {
-          background-color: #e3f2fd;
-          border-color: #2196f3;
-        }
-
-        .label-color {
-          width: 12px;
-          height: 12px;
-          border-radius: 50%;
-        }
-      }
-    }
-
-    .subtask-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 8px;
-      margin-bottom: 8px;
-      background-color: #f5f5f5;
-      border-radius: 4px;
-    }
+    height: calc(100vh - 120px);
   }
 
   .form-footer {
@@ -112,7 +57,6 @@
     bottom: 0;
     left: 0;
     right: 0;
-    box-shadow: 0 -2px 8px rgba(25, 118, 210, 0.08);
     padding: 16px 20px;
     z-index: 100;
 
@@ -211,8 +155,6 @@ mat-dialog-actions {
 ::ng-deep .ngx-mat-timepicker-dial {
   background: #fff !important;
   border-radius: 50% !important;
-  box-shadow: 0 2px 16px rgba(0,0,0,0.10) !important;
-  border: 2px solid #1976d2 !important;
 }
 
 .no-task-section {
@@ -227,6 +169,102 @@ mat-dialog-actions {
     width: 18px;
     color: rgba(0, 0, 0, 0.54);
     cursor: help;
+  }
+}
+
+.mat-dialog-title, .dialog-header, .task-form-header {
+  min-height: 64px;
+  padding-top: 24px;
+  padding-bottom: 24px;
+  font-size: 2rem;
+  display: flex;
+  align-items: center;
+}
+
+// アニメーションを無効化
+::ng-deep .no-animation-dialog {
+  .mdc-dialog__surface {
+    transform: none !important;
+    opacity: 1 !important;
+    transition: none !important;
+    box-shadow: none !important;
+    animation: none !important;
+  }
+}
+
+// ダイアログの基本スタイル
+::ng-deep .mat-mdc-dialog-container {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  transform: none !important;
+  transition: none !important;
+  animation: none !important;
+}
+
+// バックドロップの基本スタイル
+::ng-deep .cdk-overlay-backdrop {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  background-color: transparent !important;
+  transition: none !important;
+  animation: none !important;
+}
+
+// オーバーレイコンテナの基本スタイル
+::ng-deep .cdk-overlay-container {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  transition: none !important;
+  animation: none !important;
+}
+
+// オーバーレイペインの基本スタイル
+::ng-deep .cdk-overlay-pane {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  transform: none !important;
+  z-index: 1000 !important;
+  transition: none !important;
+  animation: none !important;
+}
+
+// 非表示状態のオーバーレイを完全に削除
+::ng-deep .cdk-overlay-container.cdk-overlay-hidden,
+::ng-deep .cdk-overlay-backdrop.cdk-overlay-backdrop-showing,
+::ng-deep .cdk-overlay-pane.cdk-overlay-hidden {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transform: none !important;
+}
+
+// 入力欄の幅を広げる
+.full-width,
+mat-form-field.full-width {
+  width: 100%;
+  min-width: 300px;
+  max-width: 100%;
+}
+
+
+.form-section mat-form-field {
+  flex: 1 1 0;
+  min-width: 220px;
+  max-width: 100%;
+}
+
+@media (min-width: 600px) {
+  .form-section mat-form-field {
+    min-width: 320px;
   }
 }
   

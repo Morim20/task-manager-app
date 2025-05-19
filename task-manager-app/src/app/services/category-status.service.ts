@@ -2,127 +2,102 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { CategoryStatus } from '../models/task.model';
 import { StatusMaster } from '../models/status.model';
+import { AngularFirestore } from '@angular/fire/compat/firestore';
+import { AngularFireAuth } from '@angular/fire/compat/auth';
+import { FirebaseError } from '@angular/fire/app';
 
 @Injectable({
   providedIn: 'root'
 })
 export class CategoryStatusService {
   private categoryStatuses = new BehaviorSubject<CategoryStatus[]>([]);
-  private readonly DB_NAME = 'TaskManagerDB';
-  private readonly STORE_NAME = 'categoryStatuses';
-  private readonly DB_VERSION = 1;
-  private db!: IDBDatabase;
 
-  constructor() {
-    this.initializeDB();
-  }
-
-  private initializeDB(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const request = indexedDB.open(this.DB_NAME, this.DB_VERSION);
-
-      request.onerror = () => {
-        console.error('IndexedDBの初期化に失敗しました:', request.error);
-        reject(request.error);
-      };
-
-      request.onsuccess = () => {
-        this.db = request.result;
-        console.log('IndexedDBの初期化が成功しました');
-        this.loadCategoryStatuses();
-        resolve();
-      };
-
-      request.onupgradeneeded = (event) => {
-        const db = (event.target as IDBOpenDBRequest).result;
-        
-        // カテゴリーステータスストアの作成
-        if (!db.objectStoreNames.contains(this.STORE_NAME)) {
-          const store = db.createObjectStore(this.STORE_NAME, { keyPath: 'categoryId' });
-          store.createIndex('categoryId', 'categoryId', { unique: true });
-        }
-      };
+  constructor(
+    private firestore: AngularFirestore,
+    private auth: AngularFireAuth
+  ) {
+    // 認証状態の変更を監視
+    this.auth.authState.subscribe(user => {
+      if (user) {
+        console.log('ユーザー認証状態:', user.uid);
+        this.initializeStatuses();
+      } else {
+        console.log('ユーザー未認証');
+        this.categoryStatuses.next([]);
+      }
     });
   }
 
-  private async ensureDBInitialized(): Promise<void> {
-    if (!this.db) {
-      await this.initializeDB();
+  private async initializeStatuses() {
+    const user = await this.auth.currentUser;
+    if (!user) {
+      console.log('ユーザーが認証されていません');
+      this.categoryStatuses.next([]);
+      return;
     }
-  }
 
-  private loadCategoryStatuses(): void {
-    const transaction = this.db.transaction(this.STORE_NAME, 'readonly');
-    const store = transaction.objectStore(this.STORE_NAME);
-    const request = store.getAll();
+    try {
+      console.log('カテゴリーステータスの取得開始:', user.uid);
+      // Firestoreからステータスを取得
+      const statusesRef = this.firestore.collection(`users/${user.uid}/categoryStatuses`);
+      const snapshot = await statusesRef.get().toPromise();
+      const statuses: CategoryStatus[] = [];
+      snapshot?.forEach(docSnap => {
+        const data = docSnap.data() as CategoryStatus;
+        statuses.push({
+          ...data,
+          id: docSnap.id
+        });
+      });
 
-    request.onsuccess = () => {
-      this.categoryStatuses.next(request.result || []);
-    };
-
-    request.onerror = () => {
-      console.error('カテゴリーステータスの読み込みに失敗しました:', request.error);
-    };
+      console.log('取得したカテゴリーステータス:', statuses);
+      this.categoryStatuses.next(statuses);
+    } catch (error) {
+      console.error('カテゴリーステータスの取得中にエラーが発生しました:', error);
+      if (error instanceof FirebaseError) {
+        console.error('エラーの詳細:', {
+          code: error.code,
+          message: error.message,
+          stack: error.stack
+        });
+      }
+      this.categoryStatuses.next([]);
+    }
   }
 
   getCategoryStatuses(): Observable<CategoryStatus[]> {
     return this.categoryStatuses.asObservable();
   }
 
-  async getStatusesByCategoryId(categoryId: string): Promise<StatusMaster[]> {
-    await this.ensureDBInitialized();
-    return new Promise((resolve, reject) => {
-      const transaction = this.db.transaction(this.STORE_NAME, 'readonly');
-      const store = transaction.objectStore(this.STORE_NAME);
-      const index = store.index('categoryId');
-      const request = index.getAll(categoryId);
+  async addCategoryStatus(status: CategoryStatus): Promise<void> {
+    const user = await this.auth.currentUser;
+    if (!user) throw new Error('ユーザーが認証されていません');
 
-      request.onsuccess = () => {
-        const categoryStatus = request.result[0];
-        if (categoryStatus) {
-          // orderでソート
-          const statuses: StatusMaster[] = (categoryStatus.statuses as any[])
-            .map((s: any, index: number) => ({
-              id: s.id ?? `status-${index}`,
-              name: s.name,
-              order: s.order ?? index
-            }))
-            .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-          resolve(statuses);
-        } else {
-          resolve([]);
-        }
-      };
-      request.onerror = () => reject(request.error);
-    });
+    const docRef = await this.firestore.collection(`users/${user.uid}/categoryStatuses`).add(status);
+    status.id = docRef.id;
+    const currentStatuses = this.categoryStatuses.value;
+    this.categoryStatuses.next([...currentStatuses, status]);
   }
 
-  async setCategoryStatuses(categoryId: string, statuses: StatusMaster[]): Promise<void> {
-    await this.ensureDBInitialized();
-    return new Promise((resolve, reject) => {
-      const transaction = this.db.transaction(this.STORE_NAME, 'readwrite');
-      const store = transaction.objectStore(this.STORE_NAME);
-      // orderも含めて保存
-      const categoryStatus: any = {
-        categoryId,
-        statuses: statuses.map(s => ({ name: s.name, order: s.order ?? 0 })),
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-      const request = store.put(categoryStatus);
-      request.onsuccess = () => {
-        this.loadCategoryStatuses();
-        resolve();
-      };
-      request.onerror = () => reject(request.error);
-    });
-  }
+  async updateCategoryStatus(status: CategoryStatus): Promise<void> {
+    const user = await this.auth.currentUser;
+    if (!user) throw new Error('ユーザーが認証されていません');
 
-  async addStatusToCategory(categoryId: string, newStatus: StatusMaster): Promise<void> {
-    const currentStatuses = await this.getStatusesByCategoryId(categoryId);
-    if (!currentStatuses.some(s => s.name === newStatus.name)) {
-      currentStatuses.push(newStatus);
-      await this.setCategoryStatuses(categoryId, currentStatuses);
+    await this.firestore.doc(`users/${user.uid}/categoryStatuses/${status.id}`).update(status);
+    const currentStatuses = this.categoryStatuses.value;
+    const index = currentStatuses.findIndex(s => s.id === status.id);
+    if (index !== -1) {
+      currentStatuses[index] = status;
+      this.categoryStatuses.next([...currentStatuses]);
     }
+  }
+
+  async deleteCategoryStatus(statusId: string): Promise<void> {
+    const user = await this.auth.currentUser;
+    if (!user) throw new Error('ユーザーが認証されていません');
+
+    await this.firestore.doc(`users/${user.uid}/categoryStatuses/${statusId}`).delete();
+    const currentStatuses = this.categoryStatuses.value;
+    this.categoryStatuses.next(currentStatuses.filter(s => s.id !== statusId));
   }
 } 

@@ -60,7 +60,6 @@
               <div *ngIf="block.isAllDay"
                    class="event"
                    [class.no-task]="block.isNoTask"
-                   [class.target-completion]="block.isTargetCompletion"
                    [style.top.px]="block.topPosition"
                    [style.height.px]="block.heightInPixels"
                    (click)="openTaskDetail(block.task, getDayData(day).date); $event.stopPropagation()">
@@ -77,7 +76,6 @@
                    [class.all-day]="block.isAllDay"
                    [class.cross-day]="block.isCrossDay"
                    [class.overlap]="block.isOverlap"
-                   [class.target-completion]="block.isTargetCompletion"
                    [style.top.px]="block.topPosition"
                    [style.height.px]="block.heightInPixels"
                    [style.zIndex]="1000 - (block.heightInPixels ?? 0)"

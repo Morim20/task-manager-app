@@ -130,8 +130,8 @@ export class ProjectDetailComponent implements OnInit, OnDestroy {
         this.categoryTasks = tasks.filter(t => t.categoryId === this.category?.id);
         this.tasks = this.categoryTasks.filter(t => !t.completed).sort((a, b) => {
           // 日付順（dueDate→targetCompletionDateが近い順、どちらも無い場合は下）
-          const aDate = a.dueDate ? new Date(a.dueDate) : (a.targetCompletionDate ? new Date(a.targetCompletionDate) : null);
-          const bDate = b.dueDate ? new Date(b.dueDate) : (b.targetCompletionDate ? new Date(b.targetCompletionDate) : null);
+          const aDate = a.dueDate ? new Date(a.dueDate) : null;
+          const bDate = b.dueDate ? new Date(b.dueDate) : null;
           if (aDate && bDate) return aDate.getTime() - bDate.getTime();
           if (aDate) return -1;
           if (bDate) return 1;
@@ -144,6 +144,9 @@ export class ProjectDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    if (this.dialog) {
+      this.dialog.closeAll();
+    }
     // すべてのサブスクリプションをクリーンアップ
     this.destroy$.next();
     this.destroy$.complete();
@@ -329,17 +332,11 @@ export class ProjectDetailComponent implements OnInit, OnDestroy {
   // タスクの時系列ソート関数
   private taskTimeSort(a: Task, b: Task): number {
     // 日付指定がないものは常に一番下
-    const aHasDate = !!(a.dueDate || a.targetCompletionDate);
-    const bHasDate = !!(b.dueDate || b.targetCompletionDate);
+    const aHasDate = !!a.dueDate;
+    const bHasDate = !!b.dueDate;
     if (!aHasDate && bHasDate) return 1;
     if (aHasDate && !bHasDate) return -1;
     if (!aHasDate && !bHasDate) return a.title.localeCompare(b.title);
-
-    // 目標完了日タスクを最上部に
-    const aIsTarget = !!a.targetCompletionDate;
-    const bIsTarget = !!b.targetCompletionDate;
-    if (aIsTarget && !bIsTarget) return -1;
-    if (!aIsTarget && bIsTarget) return 1;
 
     // 終日タスクを次に
     const aIsAllDay = !a.startTime || a.startTime.trim() === '';

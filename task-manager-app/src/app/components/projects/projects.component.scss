@@ -254,12 +254,6 @@
   box-sizing: border-box;
 }
 
-.cdk-overlay-backdrop,
-.mat-overlay-backdrop {
-  background: transparent !important;
-  opacity: 0 !important;
-}
-
 .mat-dialog-container.create-board-dialog-card,
 .mat-dialog-container[role='dialog'].create-board-dialog-card {
   background: #fff !important;

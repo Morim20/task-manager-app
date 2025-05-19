@@ -7,7 +7,7 @@ export type TaskStatus = string;
 export type NotificationType = 'ブラウザ';
 
 // 通知のタイミング
-export type NotificationTiming = '5分前' | '10分前' | '15分前' | '30分前' | '1時間前' | '2時間前' | '1日前' | 'カスタム';
+export type NotificationTiming = '5分前' | '10分前' | '15分前' | '30分前' | '1時間前' | '2時間前' | '1日前';
 
 // 通知の重要度
 export type NotificationPriority = '高' | '中' | '低';
@@ -70,7 +70,6 @@ export interface Task {
   noTask?: boolean;  // タスクなしフラグを追加
   repeat?: RepeatSettings;  // 繰り返し設定を追加
   notification?: NotificationSettings;  // 通知設定を追加
-  targetCompletionDate?: Date;  // 目標完了日を追加
   scheduleDate?: Date; // スケジュールタスクの日付
   relatedLinks?: string[];  // 関連リンクを追加
   memo?: string;  // メモを追加
@@ -115,6 +114,7 @@ export interface Category {
 
 // カテゴリーごとのステータスを管理するインターフェース
 export interface CategoryStatus {
+  id?: string;
   categoryId: string;
   statuses: string[];
   createdAt: string;

@@ -1,6 +1,6 @@
 // ダッシュボード
 // src/app/components/dashboard/dashboard.component.ts
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -19,7 +19,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { NotificationService } from '../../services/notification.service';
 import { Category } from '../../models/category.model';
-import { TaskFormDialogComponent } from '../task-form-dialog/task-form-dialog.component';
 
 @Component({
   selector: 'app-dashboard',
@@ -37,7 +36,7 @@ import { TaskFormDialogComponent } from '../task-form-dialog/task-form-dialog.co
     RouterModule
   ]
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, OnDestroy {
   tasks: Task[] = [];
   todaysTasks: Task[] = [];
   upcomingTasks: Task[] = [];
@@ -45,8 +44,6 @@ export class DashboardComponent implements OnInit {
   groupedUpcomingTasks: { category: string, tasks: Task[] }[] = [];
   isDashboardPage = true;
   categories: Category[] = [];
-  repeatingTasks: Task[] = [];
-  isEffortLogPage = false;
 
   constructor(
     private taskSvc: TaskService,
@@ -60,8 +57,6 @@ export class DashboardComponent implements OnInit {
     this.router.events.subscribe(event => {
       if (event instanceof NavigationEnd) {
         // effort-logページかどうか判定
-        this.isEffortLogPage = this.router.url.startsWith('/effort-log');
-        // ルートが'/'または空文字列ならダッシュボード
         this.isDashboardPage = this.router.url === '/' || this.router.url === '';
       }
     });
@@ -88,8 +83,6 @@ export class DashboardComponent implements OnInit {
         });
         this.tasks = migratedTasks;
         this.updateTaskLists();
-        // 繰り返しタスクのみ抽出
-        this.repeatingTasks = this.tasks.filter(task => task.repeat && task.repeat.enabled);
       });
     });
   }
@@ -97,8 +90,10 @@ export class DashboardComponent implements OnInit {
   onAdd() {
     const dialogRef = this.dialog.open(TaskFormComponent, {
       width: '600px',
+      maxWidth: '95vw',
+      height: 'auto',
       maxHeight: '90vh',
-      panelClass: ['task-form-dialog', 'mat-elevation-z8'],
+      panelClass: ['mat-elevation-z8'],
       autoFocus: true,
       disableClose: false,
       position: { top: '50px' }
@@ -111,116 +106,12 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  private expandRepeatingTasks(tasks: Task[]): Task[] {
-    const expandedTasks: Task[] = [];
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-
-    tasks.forEach(task => {
-      if (!task.repeat?.enabled || !task.dueDate) {
-        expandedTasks.push(task);
-        return;
-      }
-
-      const startDate = new Date(task.dueDate);
-      startDate.setHours(0, 0, 0, 0);
-      const endDate = task.repeat.endDate ? new Date(task.repeat.endDate) : endOfMonth;
-      endDate.setHours(23, 59, 59, 999);
-
-      // 開始日が今日より前の場合、今日を開始日とする
-      const effectiveStartDate = startDate < today ? today : startDate;
-
-      switch (task.repeat.frequency) {
-        case '毎日':
-          for (let date = new Date(effectiveStartDate); date <= endDate; date.setDate(date.getDate() + 1)) {
-            expandedTasks.push({
-              ...task,
-              dueDate: new Date(date),
-              id: `${task.id}_${date.toISOString()}`
-            });
-          }
-          break;
-
-        case '毎週':
-          if (task.repeat.daysOfWeek && task.repeat.daysOfWeek.length > 0) {
-            for (let date = new Date(effectiveStartDate); date <= endDate; date.setDate(date.getDate() + 1)) {
-              if (task.repeat.daysOfWeek.includes(date.getDay())) {
-                expandedTasks.push({
-                  ...task,
-                  dueDate: new Date(date),
-                  id: `${task.id}_${date.toISOString()}`
-                });
-              }
-            }
-          } else {
-            // 曜日が指定されていない場合は元のタスクのみを追加
-            expandedTasks.push(task);
-          }
-          break;
-
-        case '毎月':
-          if (task.repeat.dayOfMonth) {
-            for (let date = new Date(effectiveStartDate); date <= endDate; date.setMonth(date.getMonth() + 1)) {
-              const lastDayOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-              const day = Math.min(task.repeat.dayOfMonth, lastDayOfMonth);
-              const newDate = new Date(date.getFullYear(), date.getMonth(), day);
-              
-              if (newDate >= effectiveStartDate && newDate <= endDate) {
-                expandedTasks.push({
-                  ...task,
-                  dueDate: newDate,
-                  id: `${task.id}_${newDate.toISOString()}`
-                });
-              }
-            }
-          } else {
-            // 日付が指定されていない場合は毎月1日として処理
-            for (let date = new Date(effectiveStartDate); date <= endDate; date.setMonth(date.getMonth() + 1)) {
-              const newDate = new Date(date.getFullYear(), date.getMonth(), 1);
-              if (newDate >= effectiveStartDate && newDate <= endDate) {
-                expandedTasks.push({
-                  ...task,
-                  dueDate: newDate,
-                  id: `${task.id}_${newDate.toISOString()}`
-                });
-              }
-            }
-          }
-          break;
-
-        case '毎年':
-          for (let date = new Date(effectiveStartDate); date <= endDate; date.setFullYear(date.getFullYear() + 1)) {
-            const newDate = new Date(date);
-            if (newDate >= effectiveStartDate && newDate <= endDate) {
-              expandedTasks.push({
-                ...task,
-                dueDate: newDate,
-                id: `${task.id}_${newDate.toISOString()}`
-              });
-            }
-          }
-          break;
-
-        default:
-          // 不明な頻度の場合は元のタスクのみを追加
-          expandedTasks.push(task);
-          break;
-      }
-    });
-
-    return expandedTasks;
-  }
-
   private updateTaskLists() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // 1. 繰り返しタスクを展開
-    const expandedTasks = this.expandRepeatingTasks(this.tasks);
-
     // 2. 今日のタスクを厳密に抽出
-    this.todaysTasks = expandedTasks.filter(task => {
+    this.todaysTasks = this.tasks.filter(task => {
       if (task.completed) return false;
       if (task.dueDate) {
         const taskDate = new Date(task.dueDate);
@@ -231,9 +122,8 @@ export class DashboardComponent implements OnInit {
     }).sort((a, b) => this.taskTimeSort(a, b));
 
     // 3. 今後のタスクも同様に
-    this.upcomingTasks = expandedTasks.filter(task => {
+    this.upcomingTasks = this.tasks.filter(task => {
       if (task.completed) return false;
-      if (task.repeat?.enabled) return false; // 繰り返しタスクは除外
       if (task.dueDate) {
         const taskDate = new Date(task.dueDate);
         taskDate.setHours(0, 0, 0, 0);
@@ -245,13 +135,6 @@ export class DashboardComponent implements OnInit {
     // 4. グループ化・繰り返しタスクリストも同様に
     this.groupedTodaysTasks = this.groupTasksByCategory(this.todaysTasks);
     this.groupedUpcomingTasks = this.groupTasksByCategory(this.upcomingTasks);
-    this.repeatingTasks = this.tasks.filter(task => task.repeat && task.repeat.enabled).sort((a, b) => this.taskTimeSort(a, b));
-
-    // デバッグログ
-    console.log('Today\'s tasks:', this.todaysTasks);
-    console.log('Upcoming tasks:', this.upcomingTasks);
-    console.log('All tasks:', this.tasks);
-    console.log('Repeating tasks:', this.repeatingTasks);
   }
 
   private groupTasksByCategory(tasks: Task[]): { category: string; tasks: Task[] }[] {
@@ -280,17 +163,11 @@ export class DashboardComponent implements OnInit {
   // タスクの時系列ソート関数
   private taskTimeSort(a: Task, b: Task): number {
     // 日付指定がないものは常に一番下
-    const aHasDate = !!(a.dueDate || a.targetCompletionDate);
-    const bHasDate = !!(b.dueDate || b.targetCompletionDate);
+    const aHasDate = !!a.dueDate;
+    const bHasDate = !!b.dueDate;
     if (!aHasDate && bHasDate) return 1;
     if (aHasDate && !bHasDate) return -1;
     if (!aHasDate && !bHasDate) return a.title.localeCompare(b.title);
-
-    // 目標完了日タスクを最上部に
-    const aIsTarget = !!a.targetCompletionDate;
-    const bIsTarget = !!b.targetCompletionDate;
-    if (aIsTarget && !bIsTarget) return -1;
-    if (!aIsTarget && bIsTarget) return 1;
 
     // 終日タスクを次に
     const aIsAllDay = !a.startTime || a.startTime.trim() === '';
@@ -348,12 +225,14 @@ export class DashboardComponent implements OnInit {
   }
 
   onEdit(task: Task) {
-    const dialogRef = this.dialog.open(TaskFormDialogComponent, {
-      width: '500px',
-      maxHeight: '80vh',
-      panelClass: ['task-form-dialog', 'mat-elevation-z8'],
+    const dialogRef = this.dialog.open(TaskFormComponent, {
+      width: '600px',
+      maxWidth: '95vw',
+      height: 'auto',
+      maxHeight: '90vh',
+      panelClass: ['mat-elevation-z8'],
       autoFocus: true,
-      disableClose: true,
+      disableClose: false,
       position: { top: '50px' },
       data: { id: task.id }
     });
@@ -393,12 +272,14 @@ export class DashboardComponent implements OnInit {
   }
 
   openNewTaskDialog() {
-    const dialogRef = this.dialog.open(TaskFormDialogComponent, {
-      width: '500px',
-      maxHeight: '80vh',
-      panelClass: ['task-form-dialog', 'mat-elevation-z8'],
+    const dialogRef = this.dialog.open(TaskFormComponent, {
+      width: '600px',
+      maxWidth: '95vw',
+      height: 'auto',
+      maxHeight: '90vh',
+      panelClass: ['mat-elevation-z8'],
       autoFocus: true,
-      disableClose: true,
+      disableClose: false,
       position: { top: '50px' },
       data: {
         type: 'todo'
@@ -419,5 +300,11 @@ export class DashboardComponent implements OnInit {
     if (!categoryId) return '未分類';
     const category = this.categories.find(cat => cat.id === categoryId);
     return category ? category.name : '';
+  }
+
+  ngOnDestroy() {
+    if (this.dialog) {
+      this.dialog.closeAll();
+    }
   }
 }

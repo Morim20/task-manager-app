@@ -1,5 +1,3 @@
-//カレンダー画面
-
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatIconModule } from '@angular/material/icon';
@@ -13,7 +11,6 @@ import { MatDialog } from '@angular/material/dialog';
 import { TasksByDateDialogComponent } from '../tasks-by-date-dialog/tasks-by-date-dialog.component';
 import { TaskService } from '../../services/task.service';
 import { Task } from '../../models/task.model';
-import { TaskFormDialogComponent } from '../task-form-dialog/task-form-dialog.component';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { TaskDetailDialogComponent } from '../task-detail-dialog/task-detail-dialog.component';
 import { TaskFormComponent } from '../task-form/task-form.component';
@@ -36,7 +33,6 @@ interface TimeBlock {
   topPosition?: number;
   heightInPixels?: number;
   isOverlap?: boolean;
-  isTargetCompletion: boolean;
 }
 
 @Component({
@@ -165,34 +161,6 @@ export class CalendarComponent implements OnInit, OnDestroy {
         }
         taskMap.get(dateKey)!.push(task);
       }
-      // targetCompletionDateでマッピング（重複防止のためidで判定）
-      else if (task.targetCompletionDate) {
-        const targetDate = (typeof task.targetCompletionDate === 'string')
-          ? new Date(task.targetCompletionDate)
-          : task.targetCompletionDate;
-        const dateKey = targetDate.toDateString();
-        if (!taskMap.has(dateKey)) {
-          taskMap.set(dateKey, []);
-        }
-        // 既に同じタスクが入っていない場合のみ追加
-        const already = taskMap.get(dateKey)!.some(t => t.id === task.id + '_target_month');
-        if (!already) {
-          taskMap.get(dateKey)!.push({
-            ...task,
-            id: task.id + '_target_month',
-            title: task.title + '（目標）'
-          });
-        }
-      }
-      // dueDate/targetCompletionDateが無く、scheduleDateがある場合はscheduleDateで表示
-      else if (task.scheduleDate) {
-        const scheduleDate = new Date(task.scheduleDate);
-        if (!isNaN(scheduleDate.getTime())) {
-          const dateKey = scheduleDate.toDateString();
-          if (!taskMap.has(dateKey)) taskMap.set(dateKey, []);
-          taskMap.get(dateKey)!.push(task);
-        }
-      }
     });
 
     // タスクのソート関数
@@ -320,25 +288,6 @@ export class CalendarComponent implements OnInit, OnDestroy {
     });
   }
 
-  openNewTaskDialog() {
-    const dialogRef = this.dialog.open(TaskFormDialogComponent, {
-      width: '500px',
-      maxHeight: '80vh',
-      panelClass: ['task-form-dialog', 'mat-elevation-z8'],
-      autoFocus: true,
-      disableClose: true,
-      position: { top: '50px' },
-      data: {
-        type: 'todo'
-      }
-    });
-
-    dialogRef.afterClosed().subscribe(result => {
-      if (result) {
-        this.loadTasks();
-      }
-    });
-  }
 
   goToday() {
     const today = new Date();
@@ -376,7 +325,7 @@ export class CalendarComponent implements OnInit, OnDestroy {
         const start = this.parseTime(task.startTime!);
         const end = this.parseTime(task.endTime!);
         if (start.hour !== null && end.hour !== null && end.hour >= start.hour) {
-          timeTable[start.hour][dayIdx].push({ task, duration: end.hour - start.hour + 1, isNoTask: true });
+            timeTable[start.hour][dayIdx].push({ task, duration: end.hour - start.hour + 1, isNoTask: true });
           for (let h = start.hour + 1; h <= end.hour; h++) {
             // バーの途中セルは空配列のまま
           }
@@ -388,7 +337,7 @@ export class CalendarComponent implements OnInit, OnDestroy {
           const start = this.parseTime(task.startTime);
           const end = this.parseTime(task.endTime);
           if (start.hour !== null && end.hour !== null && end.hour >= start.hour) {
-            timeTable[start.hour][dayIdx].push({ task, duration: end.hour - start.hour + 1 });
+              timeTable[start.hour][dayIdx].push({ task, duration: end.hour - start.hour + 1 });
             for (let h = start.hour + 1; h <= end.hour; h++) {
               // バーの途中セルは空配列のまま
             }
@@ -561,20 +510,6 @@ export class CalendarComponent implements OnInit, OnDestroy {
     }
     // --- ここまで追加 ---
 
-    // targetCompletionDateが一致するタスクも追加（型安全版）
-    expandedTasks.forEach(t => {
-      if (t.targetCompletionDate) {
-        // ここで必ずDate型に変換
-        const targetDate = (typeof t.targetCompletionDate === 'string')
-          ? new Date(t.targetCompletionDate)
-          : t.targetCompletionDate;
-        const targetDateStr = targetDate.toDateString();
-        const dayDateStr = startOfDay.toDateString();
-        if (targetDateStr === dayDateStr) {
-          tasksSet.add(t);
-        }
-      }
-    });
 
     const tasks = Array.from(tasksSet);
     console.log('getDayData', { day, startOfDay, tasks });
@@ -607,12 +542,7 @@ export class CalendarComponent implements OnInit, OnDestroy {
         const dayDate = new Date(dayData.date).toDateString();
         if (dueDate === dayDate) return true;
       }
-      // 締め切り日がその日でなく、目標完了日がその日でもない場合のみ追加
-      if (task.targetCompletionDate) {
-        const targetDate = new Date(task.targetCompletionDate).toDateString();
-        const dayDate = new Date(dayData.date).toDateString();
-        if (targetDate === dayDate) return false;
-      }
+
       // 締め切り日も目標完了日もその日でなければ追加
       return true;
     });
@@ -629,43 +559,13 @@ export class CalendarComponent implements OnInit, OnDestroy {
           isNoTask: task.noTask || false,
           isAllDay: true,
           isCrossDay: false,
-          isTargetCompletion: false
         });
         processedTaskIds.add(task.id);
       }
     });
 
-    // 目標完了日バーを終日タスクリストに追加（重複チェックを追加）
-    dayData.tasks.forEach(task => {
-      if (task.targetCompletionDate && !processedTaskIds.has(task.id + '_target')) {
-        const targetDate = (typeof task.targetCompletionDate === 'string')
-          ? new Date(task.targetCompletionDate)
-          : task.targetCompletionDate;
-        const targetDateStr = targetDate.toISOString().slice(0, 10);
-        const dayDateStr = new Date(dayData.date).toISOString().slice(0, 10);
-        if (targetDateStr === dayDateStr) {
-          // 目標完了日が設定されているタスクの場合、終日タスクとして表示
-          allDayBlocks.push({
-            task: { ...task, id: task.id + '_target', title: task.title + '（目標）' },
-            duration: 24,
-            startOffset: 0,
-            isNoTask: false,
-            isAllDay: true,
-            isCrossDay: false,
-            isTargetCompletion: true
-          });
-          processedTaskIds.add(task.id + '_target');
-          // 元のタスクのIDも追加して、時間指定のバーが表示されないようにする
-          processedTaskIds.add(task.id);
-        }
-      }
-    });
-
     // 縦に並べるためtopPositionを設定
     allDayBlocks.sort((a, b) => {
-      // 目標完了日タスクを最上部に
-      if (a.isTargetCompletion && !b.isTargetCompletion) return -1;
-      if (!a.isTargetCompletion && b.isTargetCompletion) return 1;
       
       // 同じ種類（目標完了日同士、または通常タスク同士）の場合は長さでソート
       // 長い方を下に（降順）
@@ -758,7 +658,6 @@ export class CalendarComponent implements OnInit, OnDestroy {
                   isNoTask: task.noTask || false,
                   isAllDay: false,
                   isCrossDay: true,
-                  isTargetCompletion: !!task.targetCompletionDate
                 });
                 processedTaskIds.add(task.id + '_sunday');
               }
@@ -811,7 +710,6 @@ export class CalendarComponent implements OnInit, OnDestroy {
                 isNoTask: task.noTask || false,
                 isAllDay: false,
                 isCrossDay: true,
-                isTargetCompletion: !!task.targetCompletionDate
               };
 
               console.log('週表示でバーを追加:', block);
@@ -855,7 +753,6 @@ export class CalendarComponent implements OnInit, OnDestroy {
               isNoTask: task.noTask || false,
               isAllDay: false,
               isCrossDay: true,
-              isTargetCompletion: !!task.targetCompletionDate
             };
             blocks.unshift(block);
             processedTaskIds.add(task.id + '_sunday');
@@ -921,7 +818,6 @@ export class CalendarComponent implements OnInit, OnDestroy {
               isNoTask: task.noTask || false,
               isAllDay: false,
               isCrossDay: true,
-              isTargetCompletion: !!task.targetCompletionDate
             });
           } else if (nextDayDateStr === currentDateStr) {
             // 日曜日側のバー（0:00～endTime）
@@ -938,7 +834,6 @@ export class CalendarComponent implements OnInit, OnDestroy {
               isNoTask: task.noTask || false,
               isAllDay: false,
               isCrossDay: true,
-              isTargetCompletion: !!task.targetCompletionDate
             });
           }
           processedTaskIds.add(task.id);
@@ -972,7 +867,6 @@ export class CalendarComponent implements OnInit, OnDestroy {
         isNoTask: task.noTask || false,
         isAllDay: false,
         isCrossDay,
-        isTargetCompletion: !!task.targetCompletionDate
       });
       processedTaskIds.add(task.id);
     });
@@ -1097,12 +991,6 @@ export class CalendarComponent implements OnInit, OnDestroy {
         const dayDate = new Date(dayData.date).toDateString();
         if (dueDate === dayDate) return true;
       }
-      // 締め切り日がその日でなく、目標完了日がその日でもない場合のみ追加
-      if (task.targetCompletionDate) {
-        const targetDate = new Date(task.targetCompletionDate).toDateString();
-        const dayDate = new Date(dayData.date).toDateString();
-        if (targetDate === dayDate) return false;
-      }
       // 締め切り日も目標完了日もその日でなければ追加
       return true;
     });
@@ -1118,7 +1006,6 @@ export class CalendarComponent implements OnInit, OnDestroy {
           isNoTask: task.noTask || false,
           isAllDay: true,
           isCrossDay: false,
-          isTargetCompletion: !!task.targetCompletionDate
         });
         processedTaskIds.add(task.id);
       }
@@ -1167,7 +1054,6 @@ export class CalendarComponent implements OnInit, OnDestroy {
           isNoTask: task.noTask || false,
           isAllDay: false,
           isCrossDay,
-          isTargetCompletion: !!task.targetCompletionDate
         });
         processedTaskIds.add(task.id);
       }
@@ -1211,7 +1097,6 @@ export class CalendarComponent implements OnInit, OnDestroy {
     tasks.forEach(task => {
       if (!task.repeat?.enabled) {
         const hasDueDateInRange = task.dueDate && (new Date(task.dueDate) >= rangeStart && new Date(task.dueDate) <= rangeEnd);
-        const hasTargetCompletionDateInRange = task.targetCompletionDate && (new Date(task.targetCompletionDate) >= rangeStart && new Date(task.targetCompletionDate) <= rangeEnd);
         // 追加: scheduleDateが範囲内なら追加
         const hasScheduleDateInRange = task.scheduleDate && (new Date(task.scheduleDate) >= rangeStart && new Date(task.scheduleDate) <= rangeEnd);
         // 追加: startTime/endTimeのみのタスクもcreatedAtが範囲内なら追加
@@ -1228,7 +1113,7 @@ export class CalendarComponent implements OnInit, OnDestroy {
           ((prevDayDate >= rangeStart && prevDayDate <= rangeEnd) || 
            (nextDayDate >= rangeStart && nextDayDate <= rangeEnd));
         
-        if (hasDueDateInRange || hasTargetCompletionDateInRange || hasScheduleInRange || 
+        if (hasDueDateInRange || hasScheduleInRange || 
             hasScheduleDateInRange || hasCrossDayInRange) {
           expandedTasks.push(task);
         }
@@ -1381,11 +1266,6 @@ export class CalendarComponent implements OnInit, OnDestroy {
   // タスクを時間順にソート
   private sortTasksByTime(tasks: Task[]): Task[] {
     return [...tasks].sort((a, b) => {
-      // 目標完了日タスクを最上部に
-      const aIsTarget = !!a.targetCompletionDate;
-      const bIsTarget = !!b.targetCompletionDate;
-      if (aIsTarget && !bIsTarget) return -1;
-      if (!aIsTarget && bIsTarget) return 1;
 
       // 終日タスクを次に
       const aIsAllDay = !a.startTime || a.startTime.trim() === '';
@@ -1395,9 +1275,17 @@ export class CalendarComponent implements OnInit, OnDestroy {
       if (aIsAllDay && bIsAllDay) return a.title.localeCompare(b.title);
 
       // 時間指定のあるタスクを時系列でソート
-      const aTime = this.parseTimeToMinutes(a.startTime) ?? this.parseTimeToMinutes(a.dueTime) ?? this.parseTimeToMinutes(a.endTime);
-      const bTime = this.parseTimeToMinutes(b.startTime) ?? this.parseTimeToMinutes(b.dueTime) ?? this.parseTimeToMinutes(b.endTime);
-      if (aTime !== bTime) return aTime - bTime;
+      const aTime = a.startTime || a.dueTime || '';
+      const bTime = b.startTime || b.dueTime || '';
+      const aTimeObj = this.parseTime(aTime);
+      const bTimeObj = this.parseTime(bTime);
+      if (aTimeObj.hour === null && bTimeObj.hour === null) return 0;
+      if (aTimeObj.hour === null) return 1;
+      if (bTimeObj.hour === null) return -1;
+
+      const aMinutes = aTimeObj.hour * 60 + aTimeObj.minutes;
+      const bMinutes = bTimeObj.hour * 60 + bTimeObj.minutes;
+      if (aMinutes !== bMinutes) return aMinutes - bMinutes;
 
       // 同じ時刻の場合、startTimeがない（dueTimeのみ）の方を上に
       const aHasStart = !!(a.startTime && a.startTime.trim() !== '');
@@ -1479,7 +1367,7 @@ export class CalendarComponent implements OnInit, OnDestroy {
     console.log('Opening new task form with date:', taskDate);
 
     // タスク作成ダイアログを開く
-    const dialogRef = this.dialog.open(TaskFormDialogComponent, {
+    const dialogRef = this.dialog.open(TaskFormComponent, {
       width: '500px',
       maxHeight: '80vh',
       panelClass: ['task-form-dialog', 'mat-elevation-z8'],

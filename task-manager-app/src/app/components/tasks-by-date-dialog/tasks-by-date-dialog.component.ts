@@ -1,6 +1,6 @@
 // カレンダーで選んだ日付のタスクをモーダル表示する画面のTypeScript
 
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, OnDestroy } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { TaskService } from '../../services/task.service';
 import { Router } from '@angular/router';
@@ -33,7 +33,7 @@ interface DialogData {
   ],
   standalone: true
 })
-export class TasksByDateDialogComponent {
+export class TasksByDateDialogComponent implements OnDestroy {
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: DialogData,
     private dialogRef: MatDialogRef<TasksByDateDialogComponent>,
@@ -60,9 +60,11 @@ export class TasksByDateDialogComponent {
 
   onEditTask(task: Task) {
     const dialogRef = this.dialog.open(TaskFormComponent, {
-      width: '500px',
-      maxHeight: '80vh',
-      panelClass: ['task-form-dialog', 'mat-elevation-z8'],
+      width: '600px',
+      maxWidth: '95vw',
+      height: 'auto',
+      maxHeight: '90vh',
+      panelClass: ['mat-elevation-z8'],
       autoFocus: true,
       disableClose: true,
       position: { top: '50px' },
@@ -165,5 +167,11 @@ export class TasksByDateDialogComponent {
       return hour * 60 + min;
     }
     return 24 * 60;
+  }
+
+  ngOnDestroy() {
+    if (this.dialog) {
+      this.dialog.closeAll();
+    }
   }
 }

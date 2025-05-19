@@ -7,7 +7,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { TaskService } from '../../services/task.service';
 import { v4 as uuidv4 } from 'uuid';
-import { TaskFormDialogComponent } from '../task-form-dialog/task-form-dialog.component';
+import { TaskFormComponent } from '../task-form/task-form.component';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { CategoryService } from '../../services/category.service';
 import { Category } from '../../models/category.model';
@@ -20,7 +20,7 @@ import { format } from 'date-fns';
     <div class="task-detail-dialog-wrapper">
       <div class="dialog-header">
         <h2 mat-dialog-title>{{ data.task.title }}</h2>
-        <div class="action-buttons">
+        <div class="action-buttons" *ngIf="!fromToday">
           <button mat-icon-button class="small-icon-button" matTooltip="編集" (click)="onEdit()">
             <mat-icon class="small-icon">edit</mat-icon>
           </button>
@@ -59,11 +59,6 @@ import { format } from 'date-fns';
             終日
           </p>
 
-          <p *ngIf="data.task.repeat?.enabled">
-            <strong>繰り返し：</strong><br>
-            {{ getRepeatText() }}
-          </p>
-
           <p *ngIf="data.task.noTask">
             <strong>タイプ：</strong><br>
             予定枠
@@ -77,7 +72,6 @@ import { format } from 'date-fns';
           <ng-template #loading>ロード中...</ng-template>
         </div>
         <div><strong>締め切り日:</strong> {{ data.task.dueDate | date:'yyyy/MM/dd' }}</div>
-        <div *ngIf="data.task.targetCompletionDate"><strong>目標完了日:</strong> {{ data.task.targetCompletionDate | date:'yyyy/MM/dd' }}</div>
         <div *ngIf="data.task.noTask !== undefined"><strong>ノータスク:</strong> {{ data.task.noTask ? 'ON' : 'OFF' }}</div>
         <div><strong>ラベル:</strong> <span *ngFor="let label of data.task.labels">{{ label.name }} </span></div>
         <div><strong>リンク:</strong> <a *ngFor="let link of data.task.relatedLinks" [href]="link" target="_blank">{{ link }}</a></div>
@@ -114,20 +108,17 @@ import { format } from 'date-fns';
       width: auto !important;
       padding: 0 !important;
       background: transparent !important;
-      box-shadow: none !important;
     }
 
     :host ::ng-deep .mdc-dialog__surface {
       overflow: visible !important;
       background: none !important;
-      box-shadow: none !important;
     }
 
     .task-detail-dialog-wrapper {
       border: 3px solid #1976d2;
       border-radius: 8px;
       background: #fff;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.25);
       box-sizing: border-box;
       width: 500px;
       max-width: 98vw;
@@ -176,14 +167,12 @@ import { format } from 'date-fns';
       padding: 16px 0 80px 0; /* フッターの高さ＋余白 */
       min-height: 0;
       border: none !important;
-      box-shadow: none !important;
       margin-bottom: 0 !important;
       padding-bottom: 80px !important;
     }
 
     mat-dialog-content {
       border: none !important;
-      box-shadow: none !important;
       margin-bottom: 0 !important;
       padding-bottom: 0 !important;
     }
@@ -204,8 +193,6 @@ import { format } from 'date-fns';
       min-height: 56px;
       padding: 12px 4px;
       background: #fff;
-      /* border-top: 1.5px solid #e0e0e0; */
-      /* box-shadow: 0 -2px 10px rgba(0,0,0,0.08); */
       z-index: 10;
       display: flex;
       justify-content: flex-end;
@@ -268,9 +255,10 @@ import { format } from 'date-fns';
 })
 export class TaskDetailDialogComponent {
   categories: Category[] = [];
+  fromToday: boolean = false;
 
   constructor(
-    @Inject(MAT_DIALOG_DATA) public data: { task: Task, date?: Date, fromCalendar?: boolean },
+    @Inject(MAT_DIALOG_DATA) public data: { task: Task, date?: Date, fromCalendar?: boolean, fromToday?: boolean },
     public dialogRef: MatDialogRef<TaskDetailDialogComponent>,
     private taskSvc: TaskService,
     private snackBar: MatSnackBar,
@@ -278,7 +266,9 @@ export class TaskDetailDialogComponent {
     private categorySvc: CategoryService,
     private cdr: ChangeDetectorRef,
     private ngZone: NgZone
-  ) {}
+  ) {
+    this.fromToday = !!data.fromToday;
+  }
 
   ngOnInit() {
     this.categorySvc.getCategories().subscribe({
@@ -301,43 +291,31 @@ export class TaskDetailDialogComponent {
     return category ? category.name : '未設定';
   }
 
-  getRepeatText(): string {
-    const repeat = this.data.task.repeat;
-    if (!repeat) return '';
-
-    switch (repeat.frequency) {
-      case '毎日':
-        return '毎日';
-      case '毎週':
-        return `毎週${repeat.daysOfWeek?.map(d => ['日', '月', '火', '水', '木', '金', '土'][d]).join('・') || ''}曜日`;
-      case '毎月':
-        return `毎月${repeat.dayOfMonth}日`;
-      case '毎年':
-        return `毎年${repeat.month != null ? repeat.month + 1 : ''}月${repeat.dayOfMonth}日`;
-      default:
-        return '';
-    }
-  }
-
   onEdit() {
     this.dialogRef.close();
-    setTimeout(() => {
-      this.dialog.open(TaskFormDialogComponent, {
-        width: '500px',
-        maxHeight: '80vh',
-        panelClass: ['task-form-dialog', 'mat-elevation-z8'],
-        autoFocus: true,
-        disableClose: true,
-        position: { top: '50px' },
-        data: { id: this.data.task.id, task: this.data.task }
-      }).afterClosed().subscribe((result: Task | undefined) => {
-        if (result) {
-          this.taskSvc.updateTask(result).then(() => {
-            this.snackBar.open('タスクを更新しました', '閉じる', { duration: 3000 });
-          });
-        }
-      });
-    }, 200);
+    const editDialogRef = this.dialog.open(TaskFormComponent, {
+      width: '600px',
+      maxWidth: '95vw',
+      height: 'auto',
+      maxHeight: '90vh',
+      panelClass: ['mat-elevation-z8'],
+      autoFocus: true,
+      disableClose: true,
+      position: { top: '50px' },
+      data: { 
+        id: this.data.task.id,
+        task: this.data.task,
+        type: this.data.task.noTask ? 'schedule' : 'todo'
+      }
+    });
+
+    editDialogRef.afterClosed().subscribe((result: Task | undefined) => {
+      if (result) {
+        this.taskSvc.updateTask(result).then(() => {
+          this.snackBar.open('タスクを更新しました', '閉じる', { duration: 3000 });
+        });
+      }
+    });
   }
 
   onDuplicate() {
@@ -417,5 +395,9 @@ export class TaskDetailDialogComponent {
       return `カスタム（${notification.customMinutes ?? '?'}分前）`;
     }
     return notification.timing;
+  }
+
+  ngOnDestroy() {
+    // 編集フォームを閉じないように、closeAllを削除
   }
 } 

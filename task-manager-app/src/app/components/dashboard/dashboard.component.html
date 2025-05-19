@@ -76,46 +76,11 @@
           </ng-template>
         </mat-card-content>
       </mat-card>
-
-      <!-- 繰り返しタスク -->
-      <mat-card class="task-card">
-        <mat-card-header>
-          <mat-card-title>繰り返しタスク</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-          <div class="task-list" *ngIf="repeatingTasks.length > 0; else noRepeatingTasks">
-            <div *ngFor="let task of repeatingTasks" class="task-item" (click)="onTaskClick(task)">
-              <div class="task-meta" style="margin-bottom: 4px;">
-                <ng-container *ngIf="task.labels && task.labels.length">
-                  <span *ngFor="let label of task.labels" class="label-badge" [style.background]="label.color || '#e3f2fd'" [style.color]="label.color ? '#fff' : '#1976d2'" style="margin-left:4px; padding:2px 8px; border-radius:8px; font-size:12px;">
-                    {{label.name}}
-                  </span>
-                </ng-container>
-                <span class="time" *ngIf="task.startTime || task.endTime" style="margin-left:8px;">
-                  <mat-icon>schedule</mat-icon>
-                  {{task.startTime}} - {{task.endTime}}
-                </span>
-                <span class="time" *ngIf="!task.startTime && task.dueTime" style="margin-left:8px;">
-                  <mat-icon>schedule</mat-icon>
-                  {{task.dueTime}}
-                </span>
-              </div>
-              <h3 style="margin:0; font-size:1.2rem; font-weight:bold;">{{task.title}}</h3>
-              <div style="font-size:0.9em; color:#888; margin-top:2px;">
-                <span *ngIf="task.repeat && task.repeat.frequency">({{task.repeat.frequency}})</span>
-              </div>
-            </div>
-          </div>
-          <ng-template #noRepeatingTasks>
-            <div style="color:#888; text-align:center; padding:16px;">繰り返しタスクはありません</div>
-          </ng-template>
-        </mat-card-content>
-      </mat-card>
     </div>
   </ng-container>
 </div>
 
 <!-- 新規追加ボタンなどを常時表示 -->
-<button mat-fab color="primary" class="fab" (click)="onAdd()" *ngIf="!isEffortLogPage">
+<button mat-fab color="primary" class="fab" (click)="onAdd()">
   <mat-icon>add</mat-icon>
 </button>

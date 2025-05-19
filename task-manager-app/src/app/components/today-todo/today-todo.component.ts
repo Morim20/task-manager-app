@@ -1,7 +1,6 @@
 import { Component, OnInit, ViewChild, ElementRef, AfterViewInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TaskService } from '../../services/task.service';
-import { TaskStorageService } from '../../services/task-storage.service';
 import { Task } from '../../models/task.model';
 import { NgxChartsModule } from '@swimlane/ngx-charts';
 import { MatCardModule } from '@angular/material/card';
@@ -378,7 +377,6 @@ export class TodayTodoComponent implements OnInit, AfterViewInit, OnDestroy {
 
   constructor(
     private taskService: TaskService,
-    private taskStorage: TaskStorageService,
     private dialog: MatDialog,
     private userSettingsService: UserSettingsService,
     private authService: AuthService
@@ -667,7 +665,7 @@ export class TodayTodoComponent implements OnInit, AfterViewInit, OnDestroy {
         return;
       }
       const startDate = task.repeat.startDate ? new Date(task.repeat.startDate) : rangeStart;
-      const endDate = task.repeat.endDate ? new Date(task.repeat.endDate) : rangeEnd;
+      const endDate = task.repeat.endDate ? new Date(task.repeat.endDate) : new Date('2100-01-01');
       switch (task.repeat.frequency) {
         case '毎日':
           if (today >= startDate && today <= endDate) {
@@ -719,7 +717,7 @@ export class TodayTodoComponent implements OnInit, AfterViewInit, OnDestroy {
 
   async toggleTaskCompleted(task: Task, checked: boolean) {
     if (task.id && task.id.includes('_')) {
-      await this.taskStorage.setRepeatTaskCompletion(task.id, this.getTodayStr(), checked);
+      await this.taskService.setRepeatTaskCompletion(task.id, this.getTodayStr(), checked);
       this.virtualTaskCompletionMap[task.id] = checked;
       task.completed = checked;
       task.status = checked ? '完了' : '未着手';
@@ -727,8 +725,8 @@ export class TodayTodoComponent implements OnInit, AfterViewInit, OnDestroy {
       this.updateCompletionStats();
       return;
     }
-    const updated = { ...task, completed: checked, status: checked ? '完了' : '未着手' };
-    await this.taskService.updateTask(updated);
+    const updatedTask = { ...task, completed: checked, status: checked ? '完了' : '未着手' };
+    await this.taskService.updateTask(updatedTask);
     task.completed = checked;
     task.status = checked ? '完了' : '未着手';
     this.completionRateData = this.getCompletionRateData();
@@ -739,7 +737,7 @@ export class TodayTodoComponent implements OnInit, AfterViewInit, OnDestroy {
     const virtualTasks = this.todayTasks.filter(t => t.id && t.id.includes('_'));
     const todayStr = this.getTodayStr();
     for (const t of virtualTasks) {
-      this.virtualTaskCompletionMap[t.id] = await this.taskStorage.getRepeatTaskCompletion(t.id, todayStr);
+      this.virtualTaskCompletionMap[t.id] = await this.taskService.getRepeatTaskCompletion(t.id, todayStr);
     }
   }
 
@@ -861,7 +859,7 @@ export class TodayTodoComponent implements OnInit, AfterViewInit, OnDestroy {
     this.dialog.open(TaskDetailDialogComponent, {
       width: '500px',
       maxHeight: '80vh',
-      data: { task },
+      data: { task, fromToday: true },
       panelClass: ['task-detail-dialog', 'mat-elevation-z8'],
       position: { top: '50px' }
     });

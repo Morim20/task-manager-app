@@ -164,6 +164,31 @@ export class CategoryService {
     }
   }
 
+  async updateCategoryOrder(categories: Category[]): Promise<void> {
+    const user = await this.auth.currentUser;
+    if (!user) {
+      throw new Error('ユーザーが認証されていません');
+    }
+
+    const batch = this.firestore.firestore.batch();
+    const categoriesRef = this.firestore.collection<Category>(`users/${user.uid}/categories`);
+
+    categories.forEach((category, index) => {
+      const docRef = categoriesRef.doc(category.id).ref;
+      batch.update(docRef, {
+        order: index,
+        updatedAt: new Date().toISOString()
+      });
+    });
+
+    try {
+      await batch.commit();
+    } catch (error) {
+      console.error('カテゴリーの順序更新中にエラーが発生しました:', error);
+      throw new Error('カテゴリーの順序更新に失敗しました');
+    }
+  }
+
   ngOnDestroy() {
     this.subscription.unsubscribe();
   }

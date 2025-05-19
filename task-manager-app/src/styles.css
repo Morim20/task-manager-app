@@ -79,11 +79,11 @@ body {
 
 /* タスク詳細ダイアログのスタイル */
 .task-detail-dialog {
-  /* オーバーレイの背景を濃くする */
-  .cdk-overlay-backdrop.cdk-overlay-backdrop-showing {
+  /* オーバーレイの背景を濃くする（不要なため削除） */
+  /* .cdk-overlay-backdrop.cdk-overlay-backdrop-showing {
     opacity: 0.85 !important;
     background: #000;
-  }
+  } */
 
   /* ダイアログコンテナの背景を完全に透明に */
   .mat-mdc-dialog-container, .mdc-dialog__surface {

@@ -16,55 +16,6 @@ body {
 // Material Design Overrides - ダイアログスタイル修正
 // .mat-mdc-dialog-container の透明化は削除
 
-// タスクフォームダイアログのグローバルスタイル
-.task-form-dialog {
-  // ダイアログコンテナの修正
-  .mat-mdc-dialog-container, 
-  .mat-dialog-container, 
-  .mdc-dialog__container {
-    padding: 0 !important;
-    overflow: hidden !important;
-    display: flex !important;
-    flex-direction: column !important;
-  }
-
-  // ダイアログサーフェスの修正
-  .mdc-dialog__surface {
-    display: flex !important;
-    flex-direction: column !important;
-    overflow: hidden !important;
-    max-height: 90vh !important;
-    height: auto !important;
-    min-height: 400px !important;
-    background-color: white !important;
-    border-radius: 8px !important;
-    box-shadow: 0 5px 16px rgba(0, 0, 0, 0.15) !important;
-  }
-}
-
-/* ダイアログの青い背景を削除し、正しい表示に修正 */
-.cdk-overlay-container,
-.cdk-overlay-backdrop.cdk-overlay-backdrop-showing {
-  background-color: rgba(0, 0, 0, 0.32) !important;
-}
-
-/* ダイアログヘッダーとフッターの固定表示 */
-.dialog-header {
-  position: sticky !important;
-  top: 0 !important;
-  z-index: 100 !important;
-  background-color: white !important;
-}
-
-/* タスクフォームのヘッダー・フッター色をグローバルで強制 */
-.form-header {
-  background: #1976d2 !important;
-  color: #fff !important;
-}
-.form-header h2 {
-  color: #fff !important;
-}
-
 // スクロールバースタイルのグローバル設定
 ::-webkit-scrollbar {
   width: 8px;
@@ -108,7 +59,6 @@ body {
 .mat-mdc-card {
   --mdc-elevated-card-container-shape: 12px;
   border: none !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
 }
 
 // 入力フィールドのスタイル
@@ -133,7 +83,6 @@ body {
 .task-card {
   background: #fff;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   padding: 1.5rem;
   transition: transform 0.2s ease;
 
@@ -187,8 +136,6 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
-  transition: transform 0.2s ease;
   border: none;
   cursor: pointer;
 
@@ -268,28 +215,26 @@ body {
 /* タイムピッカーやダイアログのオーバーレイ背景を半透明の黒に戻す */
 .cdk-overlay-backdrop, .cdk-overlay-backdrop.cdk-overlay-backdrop-showing {
   background: transparent !important;
-  opacity: 1 !important;
+  opacity: 0 !important;
 }
 
 /* タイムピッカー本体の白背景は維持 */
 .ngx-mat-timepicker-content, ::ng-deep .ngx-mat-timepicker-content {
   background: #fff !important;
   color: #222 !important;
-  box-shadow: 0 2px 16px rgba(0,0,0,0.08) !important;
 }
 
 /* 時計の円盤部分だけ白背景＋影を付ける */
 ::ng-deep .ngx-mat-timepicker-dial {
   background: #fff !important;
   border-radius: 50% !important;
-  box-shadow: 0 2px 16px rgba(0,0,0,0.10) !important;
 }
 
-.cdk-overlay-backdrop,
-.mat-overlay-backdrop {
-  background: transparent !important;
-  opacity: 0 !important;
-}
+// .cdk-overlay-backdrop,
+// .mat-overlay-backdrop {
+//   background: transparent !important;
+//   opacity: 0 !important;
+// }
 
-
-// ダイアログ・オーバーレイに関するすべてのカスタムCSSを完全に削除 
+// ダイアログ・オーバーレイに関するすべてのカスタムCSSを完全に削除
+// （box-shadow: none !important; のカスタムCSSも削除） 

@@ -31,8 +31,6 @@ export const routes: Routes = [
       // 実際の画面たち
       { path: 'today-todo', component: TodayTodoComponent },
       { path: 'tasks',         component: TaskListComponent },
-      { path: 'tasks/new',     component: TaskFormComponent },
-      { path: 'tasks/:id/edit', component: TaskFormComponent },
       { path: 'calendar',      component: CalendarComponent },
       { path: 'projects',      component: ProjectsComponent },
       { path: 'projects/personal', component: PersonalProjectsComponent },

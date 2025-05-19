@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -42,13 +42,7 @@ import { NotificationSettings, NotificationType, NotificationTiming, Notificatio
             <mat-option value="1時間前">1時間前</mat-option>
             <mat-option value="2時間前">2時間前</mat-option>
             <mat-option value="1日前">1日前</mat-option>
-            <mat-option value="カスタム">カスタム</mat-option>
           </mat-select>
-        </mat-form-field>
-
-        <mat-form-field *ngIf="form.get('timing')?.value === 'カスタム'" appearance="outline">
-          <mat-label>カスタム時間（分）</mat-label>
-          <input matInput type="number" formControlName="customMinutes" min="1">
         </mat-form-field>
 
         <mat-form-field appearance="outline">
@@ -71,28 +65,39 @@ import { NotificationSettings, NotificationType, NotificationTiming, Notificatio
     }
   `]
 })
-export class NotificationSettingsComponent {
-  @Input() set settings(value: NotificationSettings | null) {
-    if (value) {
-      this.form.patchValue(value);
-    }
-  }
-
+export class NotificationSettingsComponent implements OnChanges {
+  @Input() settings: NotificationSettings | null = null;
   @Output() settingsChange = new EventEmitter<NotificationSettings>();
 
   form: FormGroup;
+  private isInternalChange = false;
 
   constructor(private fb: FormBuilder) {
     this.form = this.fb.group({
       enabled: [false],
       type: ['ブラウザ'],
       timing: ['10分前'],
-      customMinutes: [5],
       priority: ['中']
     });
 
+    // フォームの値が変更されたときの処理
     this.form.valueChanges.subscribe(value => {
-      this.settingsChange.emit(value);
+      if (!this.isInternalChange) {
+        this.settingsChange.emit(value);
+      }
     });
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['settings'] && !this.isInternalChange) {
+      this.isInternalChange = true;
+      this.form.patchValue(this.settings || {
+        enabled: false,
+        type: 'ブラウザ',
+        timing: '10分前',
+        priority: '中'
+      }, { emitEvent: false });
+      this.isInternalChange = false;
+    }
   }
 } 

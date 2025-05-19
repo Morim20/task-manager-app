@@ -4,17 +4,23 @@
   <div class="header-card">
     <div class="header-content">
       <h1>TODO管理</h1>
-      <div class="view-toggle">
-        <mat-button-toggle-group [value]="viewMode" (change)="toggleViewMode()">
-          <mat-button-toggle value="list">
-            <mat-icon>view_list</mat-icon>
-            リスト
-          </mat-button-toggle>
-          <mat-button-toggle value="kanban">
-            <mat-icon>view_column</mat-icon>
-            カンバン
-          </mat-button-toggle>
-        </mat-button-toggle-group>
+      <div class="header-actions">
+        <button mat-button color="primary" (click)="manualSortTasks()" matTooltip="タスクを期限日時で並び替え">
+          <mat-icon>sort</mat-icon>
+          期限日時順で並び替え
+        </button>
+        <div class="view-toggle">
+          <mat-button-toggle-group [value]="viewMode" (change)="toggleViewMode()">
+            <mat-button-toggle value="list">
+              <mat-icon>view_list</mat-icon>
+              リスト
+            </mat-button-toggle>
+            <mat-button-toggle value="kanban">
+              <mat-icon>view_column</mat-icon>
+              カンバン
+            </mat-button-toggle>
+          </mat-button-toggle-group>
+        </div>
       </div>
     </div>
     
@@ -38,15 +44,7 @@
   </div>
 
   <!-- リストビュー -->
-  <div class="task-list" *ngIf="viewMode === 'list'" 
-       cdkDropList 
-       cdkDropListOrientation="vertical"
-       [cdkDropListData]="filteredTasks" 
-       (cdkDropListDropped)="onListTaskDrop($event)"
-       id="list-tasks"
-       [cdkDropListSortingDisabled]="false"
-       [cdkDropListAutoScrollDisabled]="false"
-       [cdkDropListAutoScrollStep]="10">
+  <div class="task-list" *ngIf="viewMode === 'list'">
     <div class="task-list-header">
       <div class="task-list-col name-col">Name</div>
       <div class="task-list-col due-col">Due date / Time</div>
@@ -54,40 +52,12 @@
     </div>
     <div *ngFor="let task of filteredTasks; let i = index" 
          class="task-card" 
-         [class.completed]="task.completed" 
-         cdkDrag 
-         [cdkDragData]="task"
-         [attr.data-order]="task.order"
-         (keydown.enter)="$event.stopPropagation()">
-      <!-- ドラッグプレースホルダー -->
-      <div *cdkDragPlaceholder class="task-placeholder"></div>
-      
-      <!-- ドラッグプレビュー -->
-      <div *cdkDragPreview class="list-drag-preview">
-        <div class="task-header-row">
-          <div class="task-list-col name-col">
-            <span class="task-title">{{task.title}}</span>
-          </div>
-          <div class="task-list-col due-col">
-            <span class="due-date" [ngClass]="{'small-text': selectedCategory === 'すべて'}">
-              <span *ngIf="task.dueDate">{{task.dueDate | date:'yyyy/MM/dd'}}</span>
-              <span *ngIf="task.dueDate && task.dueTime && selectedCategory === 'すべて'">｜</span>
-              <mat-icon *ngIf="task.dueTime">schedule</mat-icon>
-              <span *ngIf="task.dueTime">{{task.dueTime}}</span>
-            </span>
-            <span class="category-badge" [ngClass]="{'small-text': selectedCategory === 'すべて'}">
-              {{ getCategoryName(task.categoryId) }}
-            </span>
-          </div>
-        </div>
-      </div>
-      
+         [class.completed]="task.completed">
       <div class="task-card-wrapper">
-        <!-- タスクヘッダー行（全体をドラッグハンドルとして指定） -->
+        <!-- タスクヘッダー行 -->
         <div class="task-header-row"
-             cdkDragHandle
              [class.has-subtasks]="task.subTasks && task.subTasks.length > 0">
-          <div class="task-list-col name-col handle-padding" (click)="$event.stopPropagation(); task.subTasks && task.subTasks.length > 0 ? toggleExpandTask(task.id) : null">
+          <div class="task-list-col name-col" (click)="$event.stopPropagation(); task.subTasks && task.subTasks.length > 0 ? toggleExpandTask(task.id) : null">
             <mat-checkbox [checked]="task.completed" (change)="toggleComplete(task)" color="primary" (click)="$event.stopPropagation()"></mat-checkbox>
             <span class="task-title">{{task.title}}</span>
           </div>

@@ -7,8 +7,6 @@ import { AngularFirestore } from '@angular/fire/compat/firestore';
 import { AngularFireAuth } from '@angular/fire/compat/auth';
 import firebase from 'firebase/compat/app';
 
-const STORAGE_KEY = 'todo-maru-projects';
-
 @Injectable({ providedIn: 'root' })
 export class ProjectService {
   private projects = new BehaviorSubject<Project[]>([]);
@@ -46,45 +44,20 @@ export class ProjectService {
     });
     console.log('Total projects retrieved:', projects.length);
 
-    // Firestoreにプロジェクトがない場合、ローカルストレージから移行
+    // プロジェクトが存在しない場合はデフォルトのプロジェクトを作成
     if (projects.length === 0) {
-      const localProjects = this.loadFromLocalStorage();
-      if (localProjects && localProjects.length > 0) {
-        // ローカルストレージのデータをFirestoreに移行
-        for (const project of localProjects) {
-          await this.add(project);
-        }
-        projects.push(...localProjects);
-        // 移行完了後、ローカルストレージのデータを削除
-        localStorage.removeItem(STORAGE_KEY);
-      } else {
-        // デフォルトのプロジェクトを作成
-        const defaultProject: Project = {
-          id: uuidv4(),
-          name: '個人',
-          type: 'personal',
-          tasks: [],
-          createdAt: new Date()
-        };
-        await this.add(defaultProject);
-        projects.push(defaultProject);
-      }
+      const defaultProject: Project = {
+        id: uuidv4(),
+        name: '個人',
+        type: 'personal',
+        tasks: [],
+        createdAt: new Date()
+      };
+      await this.add(defaultProject);
+      projects.push(defaultProject);
     }
 
     this.projects.next(projects);
-  }
-
-  private loadFromLocalStorage(): Project[] {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    
-    const projects = JSON.parse(raw) as Project[];
-    return projects.map(project => ({
-      ...project,
-      createdAt: new Date(project.createdAt),
-      startDate: project.startDate ? new Date(project.startDate) : undefined,
-      dueDate: project.dueDate ? new Date(project.dueDate) : undefined
-    }));
   }
 
   getAll(): Observable<Project[]> {

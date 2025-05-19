@@ -1,6 +1,8 @@
 {
   "projects": {
-    "default": "todomaru-10098"
+    "default": "todomaru-10098",
+    "2nd": "monpro-29bd7",
+    "new": "monpro-29bd7"
   },
   "targets": {},
   "etags": {}

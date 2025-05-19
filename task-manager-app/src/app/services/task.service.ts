@@ -140,6 +140,19 @@ function prepareTaskForFirestore(task: any): any {
   // まず全体をsanitize
   const sanitizedTask = sanitizeData(task);
 
+  // dueDateを必ずTimestamp型に変換
+  if (sanitizedTask.dueDate) {
+    // すでにTimestamp型ならそのまま
+    if (!(sanitizedTask.dueDate.seconds !== undefined && sanitizedTask.dueDate.nanoseconds !== undefined)) {
+      const d = new Date(sanitizedTask.dueDate);
+      if (!isNaN(d.getTime())) {
+        sanitizedTask.dueDate = firebase.firestore.Timestamp.fromDate(d);
+      } else {
+        sanitizedTask.dueDate = null;
+      }
+    }
+  }
+
   // updatedAt, createdAt, repeatの特別処理
   if (task.updatedAt === undefined) {
     sanitizedTask.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
@@ -173,6 +186,11 @@ function prepareTaskForFirestore(task: any): any {
   return sanitizedTask;
 }
 
+interface RepeatTaskCompletion {
+  completed: boolean;
+  updatedAt: firebase.firestore.Timestamp;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -180,6 +198,7 @@ export class TaskService {
   private tasksSubject = new BehaviorSubject<Task[]>([]);
   tasks$ = this.tasksSubject.asObservable();
   private isInitialized = false;
+  private repeatTaskCompletions: { [key: string]: boolean } = {};
 
   constructor(
     private auth: AngularFireAuth,
@@ -192,18 +211,15 @@ export class TaskService {
     this.auth.authState.subscribe(user => {
       this.ngZone.run(async () => {
         if (user) {
-          console.log('User is authenticated:', user.uid);
           try {
             if (!this.isInitialized) {
               await this.loadTasks(user.uid);
               this.isInitialized = true;
             }
           } catch (error) {
-            console.error('Error in service initialization:', error);
             this.isInitialized = false;
           }
         } else {
-          console.log('User is not authenticated');
           this.tasksSubject.next([]);
           this.isInitialized = false;
         }
@@ -212,18 +228,14 @@ export class TaskService {
   }
 
   private async loadTasks(userId: string): Promise<void> {
-    console.log('タスクの読み込み開始');
     const tasksRef = this.firestore.collection(`users/${userId}/tasks`);
     const snapshot = await tasksRef.get().toPromise();
     const tasks: Task[] = [];
     snapshot?.forEach(docSnap => {
       const data = docSnap.data() as Task;
-      console.log('読み込んだタスクデータ:', data);
       const revivedTask = reviveTaskDates({ ...data, id: docSnap.id });
-      console.log('日付復元後のタスク:', revivedTask);
       tasks.push(revivedTask);
     });
-    console.log('全タスクの読み込み完了:', tasks.length);
     this.tasksSubject.next(tasks);
   }
 
@@ -246,55 +258,27 @@ export class TaskService {
         memo: task.memo ?? '',
         description: task.description ?? '',
         archivedAt: undefined,
-        targetCompletionDate: task.targetCompletionDate,
         dueDate: task.dueDate
       };
-
-      console.log('[通知] タスク追加時の通知設定:', {
-        taskId: newTask.id,
-        title: newTask.title,
-        notification: newTask.notification,
-        dueDate: newTask.dueDate,
-        dueTime: newTask.dueTime,
-        startTime: newTask.startTime
-      });
 
       const tasksRef = this.firestore.collection(`users/${user.uid}/tasks`);
       const docRef = this.firestore.doc(`users/${user.uid}/tasks/${id}`);
       const cleanTask = prepareTaskForFirestore(newTask);
-      console.log('[通知] Firestoreに保存するTask:', cleanTask);
       await docRef.set(cleanTask);
       await this.loadTasks(user.uid);
 
       // 通知設定の処理を改善
       if (newTask.notification?.enabled) {
         const hasValidDateTime = newTask.dueDate && (newTask.dueTime || newTask.startTime);
-        console.log('[通知] 通知設定の検証:', {
-          hasValidDateTime,
-          dueDate: newTask.dueDate,
-          dueTime: newTask.dueTime,
-          startTime: newTask.startTime,
-          notification: newTask.notification
-        });
 
         if (hasValidDateTime) {
-        try {
-          await this.notificationService.scheduleNotification(newTask, newTask.notification);
-            console.log('[通知] 通知のスケジュールに成功:', {
-              taskId: newTask.id,
-              title: newTask.title,
-              dueDate: newTask.dueDate,
-              dueTime: newTask.dueTime,
-              startTime: newTask.startTime,
-              notification: newTask.notification
-            });
-        } catch (e) {
-            console.error('[通知] 通知スケジューリングに失敗:', e);
-          this.snackBar.open('通知の設定に失敗しましたが、タスクは保存されました', '閉じる', { duration: 4000 });
-          return 'notification-failed';
+          try {
+            await this.notificationService.scheduleNotification(newTask, newTask.notification);
+          } catch (e) {
+            this.snackBar.open('通知の設定に失敗しましたが、タスクは保存されました', '閉じる', { duration: 4000 });
+            return 'notification-failed';
           }
         } else {
-          console.warn('[通知] 通知に必要な日付または時間が設定されていません:', newTask);
           this.snackBar.open('通知を設定するには日付と時間を設定してください', '閉じる', { duration: 4000 });
         }
       }
@@ -326,57 +310,26 @@ export class TaskService {
         updatedAt: new Date().toISOString(), 
         archivedAt,
         status: task.status ?? '未着手',
-        targetCompletionDate: task.targetCompletionDate,
         dueDate: task.dueDate
       };
-
-      console.log('[通知] タスク更新時の通知設定:', {
-        taskId: updatedTask.id,
-        title: updatedTask.title,
-        notification: updatedTask.notification,
-        dueDate: updatedTask.dueDate,
-        dueTime: updatedTask.dueTime,
-        startTime: updatedTask.startTime
-      });
 
       const tasksRef = this.firestore.collection(`users/${user.uid}/tasks`);
       const docRef = this.firestore.doc(`users/${user.uid}/tasks/${task.id}`);
       const cleanTask = prepareTaskForFirestore(updatedTask);
-      console.log('[通知] Firestore用に整形されたタスク:', cleanTask);
-      console.log('[通知] Firestoreに保存するTask:', cleanTask);
       await docRef.set(cleanTask);
-      console.log('[通知] Firestoreへの保存完了');
       await this.loadTasks(user.uid);
-      console.log('[通知] タスクの再読み込み完了');
 
       // 通知設定の処理を改善
       if (updatedTask.notification?.enabled && !updatedTask.completed) {
         const hasValidDateTime = updatedTask.dueDate && (updatedTask.dueTime || updatedTask.startTime);
-        console.log('[通知] 通知設定の検証:', {
-          hasValidDateTime,
-          dueDate: updatedTask.dueDate,
-          dueTime: updatedTask.dueTime,
-          startTime: updatedTask.startTime,
-          notification: updatedTask.notification
-        });
 
         if (hasValidDateTime) {
-        try {
-          await this.notificationService.scheduleNotification(updatedTask, updatedTask.notification);
-            console.log('[通知] 通知のスケジュールに成功:', {
-              taskId: updatedTask.id,
-              title: updatedTask.title,
-              dueDate: updatedTask.dueDate,
-              dueTime: updatedTask.dueTime,
-              startTime: updatedTask.startTime,
-              notification: updatedTask.notification
-            });
-        } catch (e) {
-            console.error('[通知] 通知スケジューリングに失敗:', e);
-          return 'notification-failed';
+          try {
+            await this.notificationService.scheduleNotification(updatedTask, updatedTask.notification);
+          } catch (e) {
+            return 'notification-failed';
           }
         } else {
-          console.warn('[通知] 通知に必要な日付または時間が設定されていません:', updatedTask);
           this.snackBar.open('通知を設定するには日付と時間を設定してください', '閉じる', { duration: 4000 });
         }
       }
@@ -676,5 +629,37 @@ export class TaskService {
       }
     });
     await Promise.all(updates);
+  }
+
+  async getRepeatTaskCompletion(taskId: string, date: string): Promise<boolean> {
+    const user = await this.auth.currentUser;
+    if (!user) return false;
+
+    const docRef = this.firestore.doc(`users/${user.uid}/repeatTaskCompletions/${taskId}_${date}`);
+    const docSnap = await docRef.get().toPromise();
+    return docSnap?.exists ? (docSnap.data() as RepeatTaskCompletion).completed : false;
+  }
+
+  async setRepeatTaskCompletion(taskId: string, date: string, completed: boolean): Promise<void> {
+    const user = await this.auth.currentUser;
+    if (!user) throw new Error('ユーザーが認証されていません');
+
+    const docRef = this.firestore.doc(`users/${user.uid}/repeatTaskCompletions/${taskId}_${date}`);
+    await docRef.set({ completed, updatedAt: firebase.firestore.FieldValue.serverTimestamp() } as RepeatTaskCompletion);
+  }
+
+  // Firestoreのキャッシュをクリアするメソッド
+  async clearFirestoreCache(): Promise<void> {
+    const user = await this.auth.currentUser;
+    if (!user) return;
+
+    try {
+      // タスクの再読み込み
+      await this.loadTasks(user.uid);
+      this.snackBar.open('データを再読み込みしました', '閉じる', { duration: 3000 });
+    } catch (error) {
+      console.error('データの再読み込みに失敗しました:', error);
+      this.snackBar.open('データの再読み込みに失敗しました', '閉じる', { duration: 3000 });
+    }
   }
 }

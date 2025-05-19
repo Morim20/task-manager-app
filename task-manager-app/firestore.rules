@@ -1,54 +1,81 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // ユーザーが認証されていることを確認
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // ユーザーが自分のドキュメントにアクセスしていることを確認
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // デバッグ用の関数
+    function debug() {
+      return {
+        auth: request.auth,
+        path: request.path,
+        method: request.method
+      };
+    }
+    
     // ユーザー自身のデータのみアクセス可能
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if isAuthenticated() && isOwner(userId);
       
       // タスク
       match /tasks/{taskId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read, write: if isAuthenticated() && isOwner(userId);
       }
       
       // カテゴリー
       match /categories/{categoryId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read, write: if isAuthenticated() && isOwner(userId);
         // ステータス（カテゴリーごと）
         match /statuses/{statusId} {
-          allow read, write: if request.auth != null && request.auth.uid == userId;
+          allow read, write: if isAuthenticated() && isOwner(userId);
         }
       }
       
-      // ラベル
-      match /labels/{labelId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
-      }
-
-      // ステータス
-      match /statuses/{statusId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+      // キャパシティ設定
+      match /capacity/main {
+        allow read, write: if isAuthenticated() && isOwner(userId);
       }
 
       // プロジェクト
       match /projects/{projectId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read, write: if isAuthenticated() && isOwner(userId);
       }
 
       // プロフィール設定（キャパシティ等）
       match /profile {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read, write: if isAuthenticated() && isOwner(userId);
       }
 
       // キャパシティ
       match /capacity/{docId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read, write: if isAuthenticated() && isOwner(userId);
+      }
+
+      // カテゴリーステータス
+      match /categoryStatuses/{statusId} {
+        allow read: if isAuthenticated() && isOwner(userId) && debug();
+        allow create: if isAuthenticated() && isOwner(userId) && debug();
+        allow update: if isAuthenticated() && isOwner(userId) && debug();
+        allow delete: if isAuthenticated() && isOwner(userId) && debug();
+      }
+
+      // その他のコレクション
+      match /{collection}/{document=**} {
+        allow read, write: if isAuthenticated() && isOwner(userId);
       }
     }
 
     // 共通設定など、全ユーザーがアクセス可能なデータ
     match /settings/{document=**} {
-      allow read: if request.auth != null;
+      allow read: if isAuthenticated();
       allow write: if false;  // 管理者のみ書き込み可能（別途管理者用ルールを設定）
     }
+    }
   }
-} 

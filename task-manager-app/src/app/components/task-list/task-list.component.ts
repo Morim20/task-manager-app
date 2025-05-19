@@ -14,7 +14,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
-import { TaskFormDialogComponent } from '../task-form-dialog/task-form-dialog.component';
+import { TaskFormComponent } from '../task-form/task-form.component';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { v4 as uuidv4 } from 'uuid';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
@@ -77,6 +77,7 @@ export class TaskListComponent implements OnInit, OnDestroy, AfterViewChecked {
   // 独自削除確認パネル用の状態
   showStatusDeleteBox = false;
   statusToDelete: string | null = null;
+  autoSort: boolean = true; // 自動ソート設定を追加
 
   constructor(
     private svc: TaskService,
@@ -158,6 +159,12 @@ export class TaskListComponent implements OnInit, OnDestroy, AfterViewChecked {
         });
       }
     });
+
+    this.svc.getTasks().subscribe((tasks: Task[]) => {
+      this.tasks = this.sortTasksByTime(tasks);
+      this.filteredTasks = this.filterTasks(this.tasks);
+      this.cdr.detectChanges();
+    });
   }
 
   // タスクのカテゴリーIDを更新する
@@ -225,8 +232,9 @@ export class TaskListComponent implements OnInit, OnDestroy, AfterViewChecked {
       return tasks;
     }
     
-    console.warn(`${undefinedOrderTasks.length}個のタスクで順序が未定義です。修復します...`);
-    console.warn('修復対象:', undefinedOrderTasks.map(t => `${t.title} (ID: ${t.id})`));
+    // 警告メッセージを非表示に
+    // console.warn(`${undefinedOrderTasks.length}個のタスクで順序が未定義です。修復します...`);
+    // console.warn('修復対象:', undefinedOrderTasks.map(t => `${t.title} (ID: ${t.id})`));
     
     // 現在の最大順序を取得
     let maxOrder = Math.max(...tasks.filter(t => t.order !== undefined).map(t => t.order || 0));
@@ -251,7 +259,8 @@ export class TaskListComponent implements OnInit, OnDestroy, AfterViewChecked {
         // メモリ内でも更新
         task.order = newOrder;
         
-        console.log(`タスク修復完了: "${task.title}" の順序を ${newOrder} に設定しました`);
+        // ログメッセージも非表示に
+        // console.log(`タスク修復完了: "${task.title}" の順序を ${newOrder} に設定しました`);
         return task;
       } catch (err) {
         console.error(`タスク修復エラー (ID: ${task.id}):`, err);
@@ -262,22 +271,20 @@ export class TaskListComponent implements OnInit, OnDestroy, AfterViewChecked {
     // すべての修復を実行
     await Promise.all(repairPromises);
     
-    // 成功メッセージは表示しない
-    
     return tasks;
   }
 
   // タッチデバイス用のドラッグアンドドロップをサポートするための初期化
   private initializeTouchDragSupport() {
-    // タッチデバイスのドラッグをより反応良くするための設定
-    document.addEventListener('touchmove', (event) => {
-      // スワイプでのページナビゲーションを防止 - ドラッグ操作中のみ
-      if (document.querySelector('.cdk-drag-preview')) {
-        event.preventDefault();
-      }
-    }, { passive: false });
-    
-    console.log('タッチデバイス用のドラッグサポートを初期化しました');
+    // タッチデバイス用のドラッグサポートを初期化
+    const dragElements = document.querySelectorAll('.cdk-drag');
+    dragElements.forEach(element => {
+      element.addEventListener('touchstart', (e: Event) => {
+        const touch = (e as TouchEvent).touches[0];
+        const dragElement = element as HTMLElement;
+        dragElement.style.touchAction = 'none';
+      });
+    });
   }
 
   private async loadAllStatuses(): Promise<void> {
@@ -366,7 +373,7 @@ export class TaskListComponent implements OnInit, OnDestroy, AfterViewChecked {
 
     let filtered = tasks;
     
-    // カテゴリーでフィルタリング（categoryIdベース）
+    // カテゴリーでフィルタリング
     if (this.selectedCategoryId) {
       filtered = filtered.filter(task => task.categoryId === this.selectedCategoryId);
       console.log('カテゴリーフィルタリング後のタスク数:', filtered.length);
@@ -375,15 +382,8 @@ export class TaskListComponent implements OnInit, OnDestroy, AfterViewChecked {
     // アーカイブされていないタスクのみ表示
     filtered = filtered.filter(task => !task.archived);
     console.log('アーカイブフィルタリング後のタスク数:', filtered.length);
-
-    // 手動で並び替えられたタスクがある場合はその順序を優先
-    const hasManualOrder = filtered.some(task => task.order !== undefined);
     
-    if (hasManualOrder) {
-      filtered.sort((a, b) => (a.order || 0) - (b.order || 0));
-    } else {
-      filtered.sort((a, b) => this.taskTimeSort(a, b));
-    }
+    // ソートはfilterTasksでは行わない（sortTasksByTimeで一元管理）
     
     console.log('フィルタリング完了');
     return filtered;
@@ -391,76 +391,120 @@ export class TaskListComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   getTasksByStatus(status: StatusMaster | string): Task[] {
     const statusName = typeof status === 'string' ? status : status.name;
-    const tasks = this.filteredTasks
-      .filter(task => task.status === statusName)
-      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-    return tasks;
+    return this.filteredTasks.filter(task => task.status === statusName);
   }
 
-  // タスクの時系列ソート関数
-  private taskTimeSort(a: Task, b: Task): number {
-    // 目標完了日タスクを最上部に
-    const aIsTarget = !!a.targetCompletionDate;
-    const bIsTarget = !!b.targetCompletionDate;
-    if (aIsTarget && !bIsTarget) return -1;
-    if (!aIsTarget && bIsTarget) return 1;
+  // タスクを時系列でソートする関数
+  private sortTasksByTime(tasks: Task[]): Task[] {
+    // 時間指定あり判定関数
+    const getHasTime = (task: Task) => {
+      return (
+        this.parseTimeString(task.startTime) !== null ||
+        this.parseTimeString(task.dueTime) !== null ||
+        this.parseTimeString(task.endTime) !== null
+      );
+    };
+    return tasks.sort((a, b) => {
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+      const aDate = a.dueDate ? new Date(a.dueDate) : null;
+      const bDate = b.dueDate ? new Date(b.dueDate) : null;
 
-    // 終日タスクを次に
-    const aIsAllDay = !a.startTime || a.startTime.trim() === '';
-    const bIsAllDay = !b.startTime || b.startTime.trim() === '';
-    if (aIsAllDay && !bIsAllDay) return -1;
-    if (!aIsAllDay && bIsAllDay) return 1;
-    if (aIsAllDay && bIsAllDay) return a.title.localeCompare(b.title);
+      if (aDate && bDate) {
+        const aIsToday = aDate.setHours(0, 0, 0, 0) === now.getTime();
+        const bIsToday = bDate.setHours(0, 0, 0, 0) === now.getTime();
+        if (aIsToday && !bIsToday) return -1;
+        if (!aIsToday && bIsToday) return 1;
+        if (aDate.getTime() !== bDate.getTime()) return aDate.getTime() - bDate.getTime();
 
-    // 時間指定のあるタスクを時系列でソート
-    const aTime = this.parseTimeToMinutes(a.startTime) ?? this.parseTimeToMinutes(a.dueTime) ?? this.parseTimeToMinutes(a.endTime);
-    const bTime = this.parseTimeToMinutes(b.startTime) ?? this.parseTimeToMinutes(b.dueTime) ?? this.parseTimeToMinutes(b.endTime);
-    if (aTime !== bTime) return aTime - bTime;
-
-    // 同じ時刻の場合、startTimeがない（dueTimeのみ）の方を上に
-    const aHasStart = !!(a.startTime && a.startTime.trim() !== '');
-    const bHasStart = !!(b.startTime && b.startTime.trim() !== '');
-    if (aHasStart !== bHasStart) return aHasStart ? 1 : -1;
-
-    // さらに同じならタイトル順
-    return a.title.localeCompare(b.title);
+        // --- 時間指定の厳密な判定 ---
+        const aHasTime = getHasTime(a);
+        const bHasTime = getHasTime(b);
+        if (aHasTime && !bHasTime) return -1;
+        if (!aHasTime && bHasTime) return 1;
+        if (aHasTime && bHasTime) {
+          const aTime = this.parseTimeString(a.startTime) ?? this.parseTimeString(a.dueTime) ?? this.parseTimeString(a.endTime) ?? 0;
+          const bTime = this.parseTimeString(b.startTime) ?? this.parseTimeString(b.dueTime) ?? this.parseTimeString(b.endTime) ?? 0;
+          return aTime - bTime;
+        }
+        // 両方時間指定なし→そのまま
+      } else if (aDate && !bDate) {
+        return -1;
+      } else if (!aDate && bDate) {
+        return 1;
+      }
+      // 3. 時間情報がない場合は優先度でソート
+      if (a.priority !== b.priority) {
+        return this.getPriorityValue(b.priority) - this.getPriorityValue(a.priority);
+      }
+      return 0;
+    });
   }
 
-  // 時刻文字列を分単位に変換（24時間表記、AM/PM、午前/午後対応）
-  private parseTimeToMinutes(timeStr?: string): number {
-    if (!timeStr) return 24 * 60;
-    const match24 = timeStr.match(/^([01]?\d|2[0-3]):([0-5]\d)$/);
-    if (match24) {
-      return parseInt(match24[1], 10) * 60 + parseInt(match24[2], 10);
+  // 時刻文字列を分単位に変換する強化版
+  private parseTimeString(timeStr?: string): number | null {
+    if (!timeStr || timeStr.trim() === '') return null;
+    
+    // 24時間形式 (HH:MM)
+    const match24h = timeStr.match(/^(\d{1,2}):(\d{2})$/);
+    if (match24h) {
+      const hours = parseInt(match24h[1], 10);
+      const minutes = parseInt(match24h[2], 10);
+      return hours * 60 + minutes;
     }
-    const matchAmPm = timeStr.match(/^([01]?\d):([0-5]\d)\s*(AM|PM)$/i);
-    if (matchAmPm) {
-      let hour = parseInt(matchAmPm[1], 10);
-      const min = parseInt(matchAmPm[2], 10);
-      const isPM = matchAmPm[3].toUpperCase() === 'PM';
-      if (hour === 12) hour = isPM ? 12 : 0;
-      else if (isPM) hour += 12;
-      return hour * 60 + min;
+    
+    // AM/PM形式 (HH:MM AM/PM)
+    const matchAMPM = timeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if (matchAMPM) {
+      let hours = parseInt(matchAMPM[1], 10);
+      const minutes = parseInt(matchAMPM[2], 10);
+      const isPM = matchAMPM[3].toUpperCase() === 'PM';
+      
+      if (hours === 12) {
+        hours = isPM ? 12 : 0;
+      } else if (isPM) {
+        hours += 12;
+      }
+      
+      return hours * 60 + minutes;
     }
-    const matchJp = timeStr.match(/^(午前|午後)?(\d{1,2}):(\d{2})$/);
-    if (matchJp) {
-      let hour = parseInt(matchJp[2], 10);
-      const min = parseInt(matchJp[3], 10);
-      if (matchJp[1] === '午後' && hour < 12) hour += 12;
-      if (matchJp[1] === '午前' && hour === 12) hour = 0;
-      return hour * 60 + min;
+    
+    // 午前/午後形式 (午前/午後 HH:MM)
+    const matchJP = timeStr.match(/^(午前|午後)?(\d{1,2}):(\d{2})$/);
+    if (matchJP) {
+      let hours = parseInt(matchJP[2], 10);
+      const minutes = parseInt(matchJP[3], 10);
+      
+      if (matchJP[1] === '午後' && hours < 12) hours += 12;
+      if (matchJP[1] === '午前' && hours === 12) hours = 0;
+      
+      return hours * 60 + minutes;
     }
-    return 24 * 60;
+    
+    return null;
+  }
+
+  // 優先度を数値に変換
+  private getPriorityValue(priority?: string): number {
+    if (!priority) return 0;
+    
+    switch (priority.toLowerCase()) {
+      case 'high': case '高': return 3;
+      case 'medium': case '中': return 2;
+      case 'low': case '低': return 1;
+      default: return 0;
+    }
   }
 
   openNewTaskDialog() {
-    const dialogRef = this.dialog.open(TaskFormDialogComponent, {
+    const dialogRef = this.dialog.open(TaskFormComponent, {
       width: '500px',
-      maxHeight: '80vh',
-      panelClass: ['task-form-dialog', 'mat-elevation-z8'],
+      height: '500px',
+      maxHeight: '90vh',
+      panelClass: ['mat-elevation-z8'],
       autoFocus: true,
       disableClose: true,
-      position: { top: '50px' },
+      position: { top: '30px' },
       data: {
         type: 'todo'
       }
@@ -469,8 +513,8 @@ export class TaskListComponent implements OnInit, OnDestroy, AfterViewChecked {
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
         this.svc.getTasks().subscribe((tasks: Task[]) => {
-          this.tasks = tasks;
-          this.filteredTasks = this.filterTasks(tasks);
+          this.tasks = this.sortTasksByTime(tasks);
+          this.filteredTasks = this.filterTasks(this.tasks);
           this.cdr.detectChanges();
         });
       }
@@ -520,13 +564,14 @@ export class TaskListComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   onEdit(task: Task) {
-    const dialogRef = this.dialog.open(TaskFormDialogComponent, {
-      width: '500px',
-      maxHeight: '80vh',
-      panelClass: ['task-form-dialog', 'mat-elevation-z8'],
+    const dialogRef = this.dialog.open(TaskFormComponent, {
+      width: '800px',
+      height: '700px',
+      maxHeight: '90vh',
+      panelClass: ['mat-elevation-z8'],
       autoFocus: true,
       disableClose: true,
-      position: { top: '50px' },
+      position: { top: '30px' },
       data: { id: task.id }
     });
 
@@ -552,227 +597,11 @@ export class TaskListComponent implements OnInit, OnDestroy, AfterViewChecked {
 
   toggleViewMode() {
     this.viewMode = this.viewMode === 'list' ? 'kanban' : 'list';
-  }
-
-  onTaskDrop(event: CdkDragDrop<Task[]>, newStatus: StatusMaster | string) {
-    console.log('タスクのドロップイベント:', event);
-    const statusName = typeof newStatus === 'string' ? newStatus : newStatus.name;
-    console.log('新しいステータス:', statusName);
     
-    if (event.previousContainer === event.container) {
-      // 同じステータス内での並び替え
-      console.log('同じステータス内での並び替え');
-      moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
-      // 同じステータス内でのタスク更新
-      this.updateTasksInSameStatus(event.container.data, statusName);
-    } else {
-      // 異なるステータス間の移動
-      console.log('異なるステータス間の移動');
-      const task = event.item.data as Task;
-      console.log('移動するタスク:', task);
-      try {
-        // UIデータの更新
-        transferArrayItem(
-          event.previousContainer.data,
-          event.container.data,
-          event.previousIndex,
-          event.currentIndex
-        );
-        // データベースの更新処理
-        this.updateTasksAfterStatusChange(
-          task,
-          statusName,
-          event.container.data,
-          event.previousContainer.data,
-          event.currentIndex
-        );
-      } catch (error) {
-        console.error('ステータス間移動エラー:', error);
-        // 通知を表示しない
-        // エラー発生時は元のタスクリストを再取得して表示を更新
-        this.svc.getTasks().subscribe(tasks => {
-          this.tasks = tasks;
-          this.filteredTasks = this.filterTasks(tasks);
-          this.cdr.detectChanges();
-        });
-      }
-    }
-  }
-
-  private async updateTasksInSameStatus(tasks: Task[], status: string) {
-    try {
-      // 同じステータス内でのタスク更新
-      const updatePromises = tasks.map(async (task, index) => {
-        try {
-          // 最新のタスク情報を取得
-          const currentTask = await this.svc.getTask(task.id);
-          if (!currentTask) {
-            console.error(`タスクが見つかりません: ${task.id}`);
-            return Promise.reject(`タスクが見つかりません: ${task.id}`);
-          }
-          
-          // 更新するプロパティだけを変更
-          const updatedTask: Task = {
-            ...currentTask,
-            order: index,
-            status: status,
-            updatedAt: new Date().toISOString()
-          };
-          
-          console.log(`同じステータス内タスク更新: ${task.title}, ID: ${task.id}, 新しい順序: ${index}`);
-          return this.svc.updateTask(updatedTask);
-        } catch (err) {
-          console.error(`タスク更新エラー (ID: ${task.id}):`, err);
-          return Promise.reject(err);
-        }
-      });
-      
-      await Promise.all(updatePromises);
-      console.log('同じステータス内でのタスク順序更新が完了しました');
-      
-      // タスクリストを再取得して最新状態を表示
-      this.svc.getTasks().subscribe(tasks => {
-        this.tasks = tasks;
-        this.filteredTasks = this.filterTasks(tasks);
-        this.cdr.detectChanges();
-        // 通知を表示しない
-      });
-    } catch (error) {
-      console.error('タスク更新エラー:', error);
-      // 通知を表示しない
-      
-      // エラー発生時は元のタスクリストを再取得
-      this.svc.getTasks().subscribe(tasks => {
-        this.tasks = tasks;
-        this.filteredTasks = this.filterTasks(tasks);
-        this.cdr.detectChanges();
-      });
-    }
-  }
-
-  private async updateTasksAfterStatusChange(
-    movedTask: Task,
-    newStatus: string,
-    targetTasks: Task[],
-    sourceTasks: Task[],
-    newIndex: number
-  ) {
-    try {
-      // 1. 移動したタスクを更新
-      const currentTask = await this.svc.getTask(movedTask.id);
-      if (!currentTask) {
-        throw new Error(`移動するタスクが見つかりません: ${movedTask.id}`);
-      }
-      
-      const updatedTask: Task = {
-        ...currentTask,
-        status: newStatus,
-        order: newIndex,
-        updatedAt: new Date().toISOString()
-      };
-      
-      console.log('移動するタスクを更新:', updatedTask);
-      await this.svc.updateTask(updatedTask);
-      
-      // 2. 移動元のタスクの順序を更新
-      const sourcePromises = sourceTasks.map(async (task, index) => {
-        const sourceTask = await this.svc.getTask(task.id);
-        if (!sourceTask) return Promise.resolve();
-        
-        const updatedSourceTask: Task = {
-          ...sourceTask,
-          order: index,
-          updatedAt: new Date().toISOString()
-        };
-        
-        return this.svc.updateTask(updatedSourceTask);
-      });
-      
-      // 3. 移動先のタスクの順序を更新（移動したタスク以外）
-      const targetPromises = targetTasks
-        .filter(t => t.id !== movedTask.id)
-        .map(async (task, index) => {
-          const targetTask = await this.svc.getTask(task.id);
-          if (!targetTask) return Promise.resolve();
-          
-          // 移動したタスクの位置を考慮して順序を計算
-          const finalIndex = index < newIndex ? index : index + 1;
-          
-          const updatedTargetTask: Task = {
-            ...targetTask,
-            order: finalIndex,
-            updatedAt: new Date().toISOString()
-          };
-          
-          return this.svc.updateTask(updatedTargetTask);
-        });
-      
-      // すべての更新を実行
-      await Promise.all([...sourcePromises, ...targetPromises]);
-      console.log('ステータス間のタスク移動が完了しました');
-      
-      // タスクリストを再取得して最新状態を表示
-      this.svc.getTasks().subscribe(tasks => {
-        this.tasks = tasks;
-        this.filteredTasks = this.filterTasks(tasks);
-        this.cdr.detectChanges();
-        // 通知を表示しない
-      });
-    } catch (error) {
-      console.error('タスク更新エラー:', error);
-      // 通知を表示しない
-      
-      // エラー発生時は元のタスクリストを再取得
-      this.svc.getTasks().subscribe(tasks => {
-        this.tasks = tasks;
-        this.filteredTasks = this.filterTasks(tasks);
-        this.cdr.detectChanges();
-      });
-    }
-  }
-
-  // ドラッグ中のプレビューをカスタマイズ
-  getDragPreview(task: Task) {
-    const preview = document.createElement('div');
-    preview.classList.add('task-drag-preview');
-    preview.innerHTML = `
-      <div class="preview-card">
-        <div class="preview-title">${task.title}</div>
-        <div class="preview-category">${this.getCategoryName(task.categoryId)}</div>
-      </div>
-    `;
-    return preview;
-  }
-
-  // ドラッグ中のタスクがドロップ可能かどうかを判定
-  canDrop(drag: CdkDrag<Task>, drop: CdkDropList<Task[]>) {
-    // ドロップを許可する（常にtrue）
-    return true;
-  }
-
-  onCategoryDrop(event: CdkDragDrop<Category[]>) {
-    // 配列内の要素を移動
-    moveItemInArray(this.categories, event.previousIndex, event.currentIndex);
-    
-    // カテゴリーの順序を更新
-    const updatedCategories = this.categories.map((category, index) => ({
-      ...category,
-      order: index,
-      updatedAt: new Date().toISOString()
-    }));
-    
-    // 一括更新
-    Promise.all(updatedCategories.map(category => 
-      this.categorySvc.update(category)
-    )).then(() => {
-      // 更新後にカテゴリーリストを再取得
-      this.categories = updatedCategories;
-      this.cdr.detectChanges();
-      this.snackBar.open('カテゴリーの順序を更新しました', '閉じる', { duration: 3000 });
-    }).catch(error => {
-      console.error('カテゴリーの更新に失敗しました:', error);
-      this.snackBar.open('カテゴリーの更新に失敗しました', '閉じる', { duration: 3000 });
-    });
+    // ビューモード切り替え後にドラッグ&ドロップを再初期化
+    setTimeout(() => {
+      this.initializeTouchDragSupport();
+    }, 0);
   }
 
   // スクロール可能かどうかをチェックしてクラスを追加/削除
@@ -824,114 +653,6 @@ export class TaskListComponent implements OnInit, OnDestroy, AfterViewChecked {
       .map(status => `status-${status.name}`);
     console.log('接続されたリスト:', connectedLists);
     return connectedLists;
-  }
-
-  onListTaskDrop(event: CdkDragDrop<Task[]>) {
-    console.log('リストタスクのドロップイベント発生:', event);
-    console.log('現在のカテゴリー:', this.selectedCategory);
-    
-    try {
-      // ドロップ前後のインデックスを確認
-      console.log(`移動: インデックス ${event.previousIndex} → ${event.currentIndex}`);
-      
-      if (event.previousIndex === event.currentIndex) {
-        console.log('同じ位置にドロップされました - 処理をスキップします');
-        return;
-      }
-      
-      // UIの状態を更新（見た目の更新）
-      moveItemInArray(this.filteredTasks, event.previousIndex, event.currentIndex);
-      
-      // タスクのコピーを作成して更新
-      const tasksToUpdate = [...this.filteredTasks];
-      
-      // カテゴリー内でのソート順確認
-      console.log(`${this.selectedCategory} カテゴリーのタスク数: ${tasksToUpdate.length}`);
-      tasksToUpdate.forEach((t, i) => {
-        console.log(`順序 ${i}: ${t.title} (ID: ${t.id}, 現在の順序: ${t.order ?? 'undefined'})`);
-      });
-      
-      // データベースに永続化するために、タスクの順序を一括で更新
-      const updatePromises = tasksToUpdate.map(async (task, idx) => {
-        try {
-          // 既存のタスクを取得
-          const existingTask = await this.svc.getTask(task.id);
-          if (!existingTask) {
-            console.error(`タスク更新エラー: ID ${task.id} のタスクが見つかりません`);
-            return Promise.resolve();
-          }
-          
-          // 順序だけを更新したタスクオブジェクトを作成
-          const updatedTask: Task = {
-            ...existingTask,
-            order: idx,  // インデックスを順序として保存
-            updatedAt: new Date().toISOString()
-          };
-          
-          // メモリ上のタスクも更新（UIを即時反映するため）
-          task.order = idx;
-          
-          console.log(`タスク更新: ${task.title}, ID: ${task.id}, 新しい順序: ${idx}`);
-          return this.svc.updateTask(updatedTask);
-        } catch (err) {
-          console.error(`タスク更新エラー (ID: ${task.id}):`, err);
-          return Promise.reject(err);
-        }
-      });
-      
-      // すべての更新を実行
-      Promise.all(updatePromises)
-        .then(() => {
-          console.log('リスト形式でのタスク順序更新が完了しました');
-          
-          // メモリ上のメインタスク配列にも順序を反映
-          this.tasks = this.tasks.map(task => {
-            const updatedTask = tasksToUpdate.find(t => t.id === task.id);
-            if (updatedTask) {
-              return { ...task, order: updatedTask.order };
-            }
-            return task;
-          });
-          
-          // 順序を再適用してUIを更新
-          this.filteredTasks = this.filterTasks(this.tasks);
-          
-          // 通知を表示しない
-          
-          // Change Detection強制実行
-          this.cdr.detectChanges();
-        })
-        .catch(error => {
-          console.error('タスク更新エラー:', error);
-          this.handleTaskUpdateError(error, 'タスクの順序更新に失敗しました');
-        });
-    } catch (error) {
-      console.error('ドラッグ&ドロップ処理エラー:', error);
-      this.handleTaskUpdateError(error, 'タスクの移動に失敗しました');
-    }
-  }
-
-  // エラーハンドリングを統一的に処理するヘルパーメソッド
-  private handleTaskUpdateError(error: any, defaultMessage: string) {
-    // エラーを記録するだけで、ユーザーには表示しない
-    console.error(`${defaultMessage}:`, error);
-    
-    // エラー発生時は元のタスクリストを再取得
-    this.reloadAllTasks();
-  }
-
-  // タスクリストを完全に再読み込みする
-  private reloadAllTasks(): Promise<void> {
-    return new Promise((resolve) => {
-      this.svc.getTasks().subscribe(tasks => {
-        console.log('タスクデータを再読み込み:', tasks.length);
-        this.tasks = tasks;
-        this.filteredTasks = this.filterTasks(tasks);
-        console.log('再読み込み後のフィルタ済みタスク順:', this.filteredTasks.map(t => `${t.title}(順序:${t.order})`));
-        this.cdr.detectChanges();
-        resolve();
-      });
-    });
   }
 
   // サブタスク入力欄の参照を設定
@@ -1101,6 +822,9 @@ export class TaskListComponent implements OnInit, OnDestroy, AfterViewChecked {
     if (this.focusTimeout) {
       clearTimeout(this.focusTimeout);
     }
+    if (this.dialog) {
+      this.dialog.closeAll();
+    }
   }
 
   ngAfterViewChecked() {
@@ -1258,6 +982,108 @@ export class TaskListComponent implements OnInit, OnDestroy, AfterViewChecked {
     if (!categoryId) return '未分類';
     const category = this.categories.find(c => c.id === categoryId);
     return category ? category.name : '未分類';
+  }
+
+  // カテゴリーのドラッグアンドドロップ
+  async onCategoryDrop(event: CdkDragDrop<Category[]>) {
+    if (event.previousIndex === event.currentIndex) return;
+    
+    // UIの更新
+    moveItemInArray(this.categories, event.previousIndex, event.currentIndex);
+    
+    // 新しい順序でカテゴリーを更新
+    const updatedCategories = this.categories.map((category, idx) => ({
+      ...category,
+      order: idx
+    }));
+
+    // Firestoreに保存
+    try {
+      await this.categorySvc.updateCategoryOrder(updatedCategories);
+      // 保存成功後、ローカルのカテゴリーを更新
+      this.categories = updatedCategories;
+      this.cdr.detectChanges();
+    } catch (error) {
+      console.error('カテゴリーの順序更新に失敗しました:', error);
+      // エラー時は元の順序に戻す
+      this.categories = [...this.categories].sort((a, b) => (a.order || 0) - (b.order || 0));
+      this.cdr.detectChanges();
+    }
+  }
+
+  // タスクのドラッグアンドドロップ
+  async onTaskDrop(event: CdkDragDrop<Task[]>, status: StatusMaster | string) {
+    if (event.previousContainer === event.container) {
+      // 同じステータス内での移動
+      moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
+      
+      // 順序を更新
+      const updatedTasks = event.container.data;
+      for (let i = 0; i < updatedTasks.length; i++) {
+        const task = updatedTasks[i];
+        task.order = i;
+        task.updatedAt = new Date().toISOString();
+        try {
+          await this.svc.updateTask(task);
+        } catch (error) {
+          console.error('タスクの順序更新に失敗:', error);
+          this.snackBar.open('タスクの順序更新に失敗しました', '閉じる', { duration: 3000 });
+        }
+      }
+    } else {
+      // 異なるステータス間での移動
+      const task = event.previousContainer.data[event.previousIndex];
+      const newStatus = typeof status === 'string' ? status : status.name;
+      
+      // タスクのステータスを更新
+      task.status = newStatus;
+      task.updatedAt = new Date().toISOString();
+      
+      try {
+        // タスクを更新
+        await this.svc.updateTask(task);
+        
+        // リストを再ソート（自動ソートが有効な場合のみ）
+        this.applyAutoSortIfEnabled();
+        
+        this.snackBar.open('タスクのステータスを更新しました', '閉じる', { duration: 3000 });
+      } catch (error) {
+        console.error('タスクのステータス更新に失敗:', error);
+        this.snackBar.open('タスクのステータス更新に失敗しました', '閉じる', { duration: 3000 });
+      }
+    }
+  }
+
+  async clearCache() {
+    try {
+      await this.svc.clearFirestoreCache();
+      // カテゴリーとステータスも再読み込み
+      this.categorySvc.getCategories().subscribe(categories => {
+        this.categories = categories;
+      });
+      if (this.selectedCategoryId) {
+        await this.statusService.initializeStatuses(this.selectedCategoryId);
+      }
+    } catch (error) {
+      console.error('キャッシュのクリアに失敗しました:', error);
+    }
+  }
+
+  // 自動ソートが有効な場合のみソートを適用するメソッド
+  private applyAutoSortIfEnabled() {
+    if (this.autoSort) {
+      this.tasks = this.sortTasksByTime(this.tasks);
+      this.filteredTasks = this.filterTasks(this.tasks);
+      this.cdr.detectChanges();
+    }
+  }
+
+  // 手動で時系列ソートを実行するメソッド
+  manualSortTasks() {
+    this.tasks = this.sortTasksByTime(this.tasks);
+    this.filteredTasks = this.filterTasks(this.tasks);
+    this.cdr.detectChanges();
+    this.snackBar.open('タスクを時系列で並び替えました', '閉じる', { duration: 3000 });
   }
 }
 

@@ -41,7 +41,6 @@ export class AppComponent implements OnInit {
   constructor(private authService: AuthService, private router: Router, private taskService: TaskService, private statusService: StatusService) {}
 
   async ngOnInit() {
-    this.checkIndexedDB();
     this.authService.getCurrentUser().subscribe(async (user: any) => {
       this.userEmail = user?.email || null;
       if (user) {
@@ -63,28 +62,6 @@ export class AppComponent implements OnInit {
         this.sidenav.open();
       }
     });
-  }
-
-  private checkIndexedDB() {
-    if (!window.indexedDB) {
-      console.error('このブラウザはIndexedDBをサポートしていません');
-      alert('このブラウザはIndexedDBをサポートしていません。別のブラウザをお試しください。');
-    } else {
-      console.log('IndexedDBが有効です');
-      
-      // テスト用のデータベースを作成して確認
-      const request = indexedDB.open('testDB', 1);
-      
-      request.onerror = (event) => {
-        console.error('IndexedDBの初期化に失敗しました:', event);
-      };
-      
-      request.onsuccess = (event) => {
-        console.log('IndexedDBの初期化が成功しました');
-        const db = (event.target as IDBOpenDBRequest).result;
-        db.close();
-      };
-    }
   }
 
   onLogout() {

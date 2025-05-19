@@ -170,14 +170,6 @@ export class NotificationService {
         case '1時間前': minutesBefore = 60; break;
         case '2時間前': minutesBefore = 120; break;
         case '1日前': minutesBefore = 1440; break;
-        case 'カスタム': 
-          if (!settings.customMinutes) {
-            console.warn('[通知] カスタム通知の分数が設定されていません。デフォルト値（10分）を使用します。');
-            minutesBefore = 10;
-          } else {
-            minutesBefore = settings.customMinutes;
-          }
-          break;
         default:
           console.warn('[通知] 通知タイミングの値が不正:', settings.timing, 'デフォルト値（10分前）を使用します。');
           minutesBefore = 10;
